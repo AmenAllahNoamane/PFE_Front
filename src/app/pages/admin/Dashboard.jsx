@@ -6,9 +6,7 @@ import { mockUsers, mockDocuments, mockAuditLogs } from '../../utils/mockData';
 import { useAuth } from '../../contexts/AuthContext';
 import userService from '../../api/userService';
 
-// ========================================
-// 📊 DASHBOARD ADMINISTRATEUR
-// ========================================
+//  DASHBOARD ADMINISTRATEUR
 
 const AdminDashboard = () => {
   const { user: currentUser } = useAuth();
@@ -88,7 +86,7 @@ const AdminDashboard = () => {
                     <Icon className="text-white" size={24} />
                   </div>
                 </div>
-                <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
+                <p className="text-3xl font-bold text-gray-900">{loading?'...':stat.value}</p>
                 <p className="text-sm text-gray-600 mt-1">{stat.label}</p>
               </div>
             );

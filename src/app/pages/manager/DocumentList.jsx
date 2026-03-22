@@ -1,40 +1,112 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import AdminLayout from '../../layouts/AdminLayout';
-import { mockDocuments, statusLabels, statusColors } from '../../utils/mockData';
-import { Search, Filter, Download, Eye } from 'lucide-react';
-
-// ========================================
-// 📄 PAGE LISTE DES DOCUMENTS (MANAGER)
-// ========================================
+import { Search, Filter, Download, Eye, AlertCircle } from 'lucide-react';
+import documentService from '../../api/documentService';
+//  PAGE LISTE DES DOCUMENTS (MANAGER)
 
 const ManagerDocumentList = () => {
-  const [documents] = useState(mockDocuments);
+  const [documents, setDocuments] = useState([]);
+  const [filteredDocs, setFilteredDocs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
 
-  // Filtrer les documents
-  const filteredDocs = documents.filter(doc => {
-    const matchesSearch = 
-      doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doc.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doc.reference.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesType = filterType === 'all' || doc.type === filterType;
-    const matchesStatus = filterStatus === 'all' || doc.status === filterStatus;
+  // Charger tous les documents au montage
+  useEffect(() => {
+    loadDocuments();
+  }, []);
 
-    return matchesSearch && matchesType && matchesStatus;
-  });
+  // Filtrer quand critères changent
+  useEffect(() => {
+    filterDocuments();
+  }, [documents, searchTerm, filterStatus]);
 
-  // Types et statuts disponibles
-  const types = ['all', 'Facture Achat', 'Facture Vente', 'Bon de Commande', 'Contrat'];
-  const statuses = ['all', 'en_cours', 'validé', 'rejeté', 'dans_bc'];
 
-  // Export CSV (simulation)
-  const handleExport = () => {
-    alert('Export CSV en cours... (fonctionnalité de démonstration)');
+  const loadDocuments = async () => {
+    try {
+      setLoading(true);
+      const data = await documentService.getAllDocuments();
+      setDocuments(data);
+    } catch (err) {
+      console.error('Erreur loadloadDocuments:',err)
+      setError('Erreur lors du chargement des documents');
+
+    } finally {
+      setLoading(false);
+    }
   };
+  const filterDocuments = () => {
+    let filtered = [...documents];
+
+    // Filtrer par recherche
+    if (searchTerm) {
+      filtered = filtered.filter(doc =>
+        doc.fileName.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Filtrer par statut
+    if (filterStatus !== 'all') {
+      filtered = filtered.filter(doc => doc.statut === filterStatus);
+    }
+
+    setFilteredDocs(filtered);
+  };
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+const formatFileSize = (bytes) => {
+  if (bytes === 0) return '0 B';
+
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  let i = 0;
+
+  while (bytes >= 1024 && i < sizes.length - 1) {
+    bytes /= 1024;
+    i++;
+  }
+
+  return bytes.toFixed(2) + ' ' + sizes[i];
+};
+
+
+  const statusLabels = {
+    EN_COURS: 'En cours',
+    TRAITEMENT: 'Traitement',
+    VALIDE: 'Validé',
+    REJETE: 'Rejeté',
+    ENVOYE_BC: 'Envoyé BC'
+  };
+
+  const statusColors = {
+    EN_COURS: 'bg-blue-100 text-blue-800',
+    TRAITEMENT: 'bg-yellow-100 text-yellow-800',
+    VALIDE: 'bg-green-100 text-green-800',
+    REJETE: 'bg-red-100 text-red-800',
+    ENVOYE_BC: 'bg-purple-100 text-purple-800'
+  };
+
+  const statuses = ['all', 'EN_COURS', 'TRAITEMENT', 'VALIDE', 'REJETE', 'ENVOYE_BC'];
+
+  // Export CSV (fonctionnalité Sprint 3)
+  const handleExport = () => {
+    alert('Export CSV disponible au Sprint 3');
+  };
+
+
+
+
+
+
+
 
   return (
     <AdminLayout>
@@ -54,6 +126,14 @@ const ManagerDocumentList = () => {
           </button>
         </div>
 
+        {/* Message d'erreur */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+            <AlertCircle className="text-red-600 flex-shrink-0" size={20} />
+            <p className="text-red-800">{error}</p>
+          </div>
+        )}
+
         {/* Filtres */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
           {/* Recherche */}
@@ -63,13 +143,13 @@ const ManagerDocumentList = () => {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Rechercher..."
+              placeholder="Rechercher par nom de fichier..."
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
             />
           </div>
 
           {/* Filtre par type */}
-          <div className="relative">
+          {/* <div className="relative">
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
             <select
               value={filterType}
@@ -82,7 +162,7 @@ const ManagerDocumentList = () => {
                 </option>
               ))}
             </select>
-          </div>
+          </div> */}
 
           {/* Filtre par statut */}
           <div className="relative">
@@ -103,6 +183,12 @@ const ManagerDocumentList = () => {
 
         {/* Tableau des documents */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            {loading ? (
+            <div className="p-12 text-center">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <p className="text-gray-600 mt-4">Chargement des documents...</p>
+            </div>
+          ): (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
@@ -114,16 +200,16 @@ const ManagerDocumentList = () => {
                     Type
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Taille
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Statut
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Client/Fournisseur
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
+                    Uploadé par
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Montant
+                    Date
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -134,26 +220,28 @@ const ManagerDocumentList = () => {
                 {filteredDocs.map((doc) => (
                   <tr key={doc.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4">
-                      <p className="text-sm font-medium text-gray-900 truncate max-w-xs">{doc.name}</p>
-                      <p className="text-xs text-gray-500 mt-1">Par {doc.uploadedByName}</p>
+                      <p className="text-sm font-medium text-gray-900 truncate max-w-xs">{doc.originalName.split('.')[0]}</p>
+                      <p className="text-xs text-gray-500 mt-1">Uploadé le {formatDate(doc.createdAt)}</p>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <p className="text-sm text-gray-600">{doc.type}</p>
+                      <p className="text-sm text-gray-600"> {doc.fileType.split('/')[1] || 'FILE'}</p>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[doc.status]}`}>
-                        {statusLabels[doc.status]}
+                      <p className="text-sm text-gray-600">
+                        {formatFileSize(doc.fileSize)} 
+                      </p>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[doc.statut]}`}>
+                        {statusLabels[doc.statut]}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-gray-900">{doc.client}</p>
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <p className="text-sm text-gray-600">{doc.date}</p>
+                      <p className="text-sm text-gray-600"> {doc.user?.nom || 'Utilisateur'}</p>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <p className="text-sm font-medium text-gray-900">
-                        {doc.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                         {formatDate(doc.createdAt)}
                       </p>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
@@ -170,13 +258,19 @@ const ManagerDocumentList = () => {
               </tbody>
             </table>
           </div>
+          )}
         </div>
-
-        {filteredDocs.length === 0 && (
+ 
+        {!loading && filteredDocs.length === 0 && (
           <div className="text-center py-12 bg-white rounded-xl border border-gray-200 mt-6">
-            <p className="text-gray-600">Aucun document trouvé</p>
+            <p className="text-gray-600">
+              {searchTerm || filterStatus !== 'all'
+                ? 'Aucun document ne correspond à vos critères'
+                : 'Aucun document dans le système'}
+            </p>
           </div>
         )}
+        
       </div>
     </AdminLayout>
   );

@@ -5,9 +5,8 @@ import UserForm from '../../components/users/UserForm';
 import userService from '../../api/userService';
 import { ArrowLeft,Loader2, Edit} from 'lucide-react';
 
-// ========================================
-// ✏️ PAGE MODIFICATION D'UTILISATEUR
-// ========================================
+
+//  PAGE MODIFICATION D'UTILISATEUR
 
 const UserEdit = () => {
   const { id } = useParams();
@@ -30,7 +29,7 @@ const UserEdit = () => {
       const data = await userService.getUserById(id);
       setUser(data);
     } catch (err) {
-      setError(err || 'Erreur de chargement');
+      setError( 'Erreur de chargement');
       console.error('Erreur loadUser:', err);
     } finally {
       setLoading(false);

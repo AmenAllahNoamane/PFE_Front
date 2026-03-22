@@ -1,18 +1,19 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+//import { useNavigate } from 'react-router';
 import AdminLayout from '../../layouts/AdminLayout';
-import { Upload, File, X, CheckCircle } from 'lucide-react';
+import { Upload, File, X, CheckCircle, AlertCircle } from 'lucide-react';
+import documentService from '../../api/documentService';
 
-// ========================================
-// 📤 PAGE UPLOAD DE DOCUMENT (COMPTABLE)
-// ========================================
+//  PAGE UPLOAD DE DOCUMENT (COMPTABLE)
 
 const DocumentUpload = () => {
-  const navigate = useNavigate();
+  //const navigate = useNavigate();
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [dragActive, setDragActive] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
 
   // Gérer le drag & drop
   const handleDrag = (e) => {
@@ -37,16 +38,17 @@ const DocumentUpload = () => {
 
   const handleFileSelect = (file) => {
     // Vérifier la taille du fichier (max 10MB)
+    setError('');
     const maxSize = 10 * 1024 * 1024; // 10MB en bytes
     if (file.size > maxSize) {
-      alert('Le fichier est trop volumineux. Taille maximale : 10MB');
+      setError('Le fichier est trop volumineux. Taille maximale : 10MB');
       return;
     }
 
     // Vérifier le type de fichier
     const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
     if (!allowedTypes.includes(file.type)) {
-      alert('Type de fichier non supporté. Formats acceptés : PDF, JPG, PNG');
+      setError('Type de fichier non supporté. Formats acceptés : PDF, JPG, PNG');
       return;
     }
 
@@ -62,29 +64,30 @@ const DocumentUpload = () => {
   const removeFile = () => {
     setSelectedFile(null);
     setUploadProgress(0);
+    setError('')
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!selectedFile) return;
 
     setUploading(true);
     setUploadProgress(0);
-
-    // Simuler l'upload avec une progression
-    const interval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setTimeout(() => {
-            setUploading(false);
-            alert('Document uploadé avec succès ! Le traitement OCR est en cours...');
-            navigate('/comptable/documents');
-          }, 500);
-          return 100;
-        }
-        return prev + 10;
+    setError('')
+    setSuccess(false);
+    try {
+      await documentService.uploadDocument(selectedFile, (progress) => {
+        setUploadProgress(progress);
       });
-    }, 200);
+      setSuccess(true);
+      setUploading(false);
+      
+    } catch (err) {
+      setError('Erreur lors de l\'upload');
+      console.error(err)
+      setUploading(false);
+      setUploadProgress(0);
+    }
+
   };
 
   return (
@@ -96,6 +99,23 @@ const DocumentUpload = () => {
           <p className="text-gray-600 mt-2">Formats acceptés : PDF, JPG, PNG (Max 10MB)</p>
         </div>
 
+         {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+            <AlertCircle className="text-red-600 flex-shrink-0" size={20} />
+            <p className="text-red-800">{error}</p>
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
+            <CheckCircle className="text-green-600 flex-shrink-0" size={20} />
+            <div>
+              <p className="text-green-800 font-medium">✓ Document uploadé avec succès </p>
+             
+            </div>
+          </div>
+        )}
+
         {/* Zone de drop */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
           {!selectedFile ? (
@@ -104,21 +124,20 @@ const DocumentUpload = () => {
               onDragLeave={handleDrag}
               onDragOver={handleDrag}
               onDrop={handleDrop}
-              className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors ${
-                dragActive
+              className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors ${dragActive
                   ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-300 hover:border-gray-400'
-              }`}
+                }`}
             >
               <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full mb-6">
                 <Upload className="text-blue-600" size={40} />
               </div>
-              
+
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
                 Glissez-déposez votre fichier ici
               </h3>
               <p className="text-gray-600 mb-6">ou</p>
-              
+
               <label className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer">
                 <Upload size={20} />
                 Parcourir les fichiers

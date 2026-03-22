@@ -1,5 +1,5 @@
 import { useState ,useEffect } from 'react';
-import { Save, X } from 'lucide-react';
+import { Save, X ,Loader2} from 'lucide-react';
 
 // ========================================
 // 📝 COMPOSANT FORMULAIRE UTILISATEUR
@@ -266,6 +266,7 @@ const UserForm = ({ user, onSubmit, onCancel,loading ,isEdit = false}) => {
         >
           <Save size={18} />
           {isEdit  ? 'Mettre à jour' : 'Créer'}
+           {loading && <Loader2 className="w-4 h-4 animate-spin" />}
         </button>
         
         {/* Bouton Annuler */}

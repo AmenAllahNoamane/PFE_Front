@@ -1,13 +1,12 @@
-import { useState , useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { Link } from 'react-router';
 import AdminLayout from '../../layouts/AdminLayout';
 import UserTable from '../../components/users/UserTable';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search,Loader2 } from 'lucide-react';
 import userService from '../../api/userService';
-// ========================================
-// 👥 PAGE LISTE DES UTILISATEURS
-// ========================================
+
+// PAGE LISTE DES UTILISATEURS
 
 const UserList = () => {
   const navigate = useNavigate();
@@ -15,8 +14,8 @@ const UserList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('')
-  
-// Charger la liste des utilisateurs
+
+  // Charger la liste des utilisateurs
   useEffect(() => {
     loadUsers();
   }, []);
@@ -28,7 +27,7 @@ const UserList = () => {
       const data = await userService.getAllUsers();
       setUsers(data);
     } catch (err) {
-      setError(err.message || 'Erreur de chargement');
+      setError( 'Erreur de chargement ');
       console.error('Erreur loadUsers:', err);
     } finally {
       setLoading(false);
@@ -36,17 +35,17 @@ const UserList = () => {
   };
   // Filtrer les utilisateurs
 
- const filteredUsers = users.filter(user => {
-  const search = searchTerm.toLowerCase();
-  
-  return (
-    user.nom?.toLowerCase().includes(search) ||
-    user.prenom?.toLowerCase().includes(search) ||
-    user.email?.toLowerCase().includes(search) ||
-    user.role?.toLowerCase().includes(search)
-  );
-});
- // Supprimer un utilisateur
+  const filteredUsers = users.filter(user => {
+    const search = searchTerm.toLowerCase();
+
+    return (
+      user.nom?.toLowerCase().includes(search) ||
+      user.prenom?.toLowerCase().includes(search) ||
+      user.email?.toLowerCase().includes(search) ||
+      user.role?.toLowerCase().includes(search)
+    );
+  });
+  // Supprimer un utilisateur
   const handleDelete = async (id) => {
     if (!window.confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
       return;
@@ -63,7 +62,7 @@ const UserList = () => {
     }
   };
 
-    // Activer/Désactiver un utilisateur
+  // Activer/Désactiver un utilisateur
   const handleToggle = async (id) => {
     try {
       await userService.toggleUser(id);
@@ -84,15 +83,15 @@ const UserList = () => {
     <AdminLayout>
       <div className="max-w-7xl mx-auto">
         {/* En-tête */}
-        
+
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Gestion des utilisateurs</h1>
-          <p className="text-gray-600 mt-2">{users.length} utilisateur(s) trouvé(s)</p>
+            <p className="text-gray-600 mt-2">{users.length} utilisateur(s) trouvé(s)</p>
           </div>
-                  
+
           <button
-            
+
             onClick={() => navigate('/admin/users/create')}
             className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
@@ -100,6 +99,12 @@ const UserList = () => {
             Nouvel utilisateur
           </button>
         </div>
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-6">
+            {error}
+          </div>
+        )}
+
 
 
         {/* Barre de recherche */}
@@ -118,9 +123,22 @@ const UserList = () => {
 
         {/* Tableau des utilisateurs */}
 
+            {loading ? (
+            <div className="p-12 text-center">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <p className="text-gray-600 mt-4">Chargement des utilisateurs...</p>
+            </div>
+          ):(
+        <UserTable users={filteredUsers} onDelete={handleDelete} onEdit={handleEdit} onToggle={handleToggle} />
+           )}
 
-        <UserTable  users={filteredUsers} onDelete={handleDelete}  onEdit={handleEdit}  onToggle={handleToggle} />
-       
+
+           {!loading && filteredUsers.length === 0 && (
+          <div className="text-center py-12 bg-white rounded-xl border border-gray-200 mt-6">
+            <p className="text-gray-600"> Aucun utilisateur trouvé</p>
+          </div>
+        )}
+
       </div>
     </AdminLayout>
   );

@@ -1,29 +1,47 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import AdminLayout from '../../layouts/AdminLayout';
-import { mockDocuments, statusLabels, statusColors } from '../../utils/mockData';
 import { useAuth } from '../../contexts/AuthContext';
-import { FileText, Upload, CheckCircle, Clock } from 'lucide-react';
+import { FileText, Upload, CheckCircle, Clock , AlertCircle} from 'lucide-react';
+import documentService from '../../api/documentService';
 
-// ========================================
-// 📊 DASHBOARD COMPTABLE
-// ========================================
+//  DASHBOARD COMPTABLE
+
 
 const ComptableDashboard = () => {
+  
   const { user } = useAuth();
+  const [documents, setDocuments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  // Filtrer les documents de l'utilisateur connecté
-  const myDocuments = mockDocuments.filter(doc => doc.uploadedBy === user.id);
-
-  // Statistiques
-  const stats = {
-    total: myDocuments.length,
-    enCours: myDocuments.filter(d => d.status === 'en_cours').length,
-    validé: myDocuments.filter(d => d.status === 'validé').length,
-    rejeté: myDocuments.filter(d => d.status === 'rejeté').length
+ // Charger les documents au montage
+  useEffect(() => {
+    loadDocuments();
+  }, []);
+ 
+  const loadDocuments = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const data = await documentService.getMyDocuments();
+      console.log(data)
+      setDocuments(data);
+    } catch (err) {
+      setError('Erreur lors du chargement des documents');
+      console.error(err)
+    } finally{
+      setLoading(false);
+    }
   };
 
-  // Documents récents
-  const recentDocs = myDocuments.slice(0, 5);
+    const stats = {
+    total: documents.length,
+    enCours: documents.filter(d => d.statut === 'EN_COURS').length,
+    traitement: documents.filter(d => d.statut === 'TRAITEMENT').length,
+    validé: documents.filter(d => d.statut === 'VALIDE').length,
+    rejeté: documents.filter(d => d.statut === 'REJETE').length
+  };
 
   return (
     <AdminLayout>
@@ -31,8 +49,14 @@ const ComptableDashboard = () => {
         {/* En-tête */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Mon tableau de bord</h1>
-          <p className="text-gray-600 mt-2">Bienvenue {user.name}</p>
+          <p className="text-gray-600 mt-2">Bienvenue {user.nom}</p>
         </div>
+          {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+            <AlertCircle className="text-red-600 flex-shrink-0" size={20} />
+            <p className="text-red-800">{error}</p>
+          </div>
+        )}
 
         {/* Statistiques */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -42,7 +66,7 @@ const ComptableDashboard = () => {
                 <FileText className="text-white" size={24} />
               </div>
             </div>
-            <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+            <p className="text-3xl font-bold text-gray-900"> {loading ? '...' : stats.total}</p>
             <p className="text-sm text-gray-600 mt-1">Mes documents</p>
           </div>
 
@@ -52,7 +76,7 @@ const ComptableDashboard = () => {
                 <Clock className="text-white" size={24} />
               </div>
             </div>
-            <p className="text-3xl font-bold text-gray-900">{stats.enCours}</p>
+            <p className="text-3xl font-bold text-gray-900">{loading ? '...' : stats.enCours}</p>
             <p className="text-sm text-gray-600 mt-1">En cours</p>
           </div>
 
@@ -62,7 +86,7 @@ const ComptableDashboard = () => {
                 <CheckCircle className="text-white" size={24} />
               </div>
             </div>
-            <p className="text-3xl font-bold text-gray-900">{stats.validé}</p>
+            <p className="text-3xl font-bold text-gray-900">{loading ? '...' : stats.validé}</p>
             <p className="text-sm text-gray-600 mt-1">Validés</p>
           </div>
 
@@ -72,7 +96,7 @@ const ComptableDashboard = () => {
                 <FileText className="text-white" size={24} />
               </div>
             </div>
-            <p className="text-3xl font-bold text-gray-900">{stats.rejeté}</p>
+            <p className="text-3xl font-bold text-gray-900">{loading ? '...' : stats.rejeté}</p>
             <p className="text-sm text-gray-600 mt-1">Rejetés</p>
           </div>
         </div>
@@ -110,7 +134,7 @@ const ComptableDashboard = () => {
           </Link>
         </div>
 
-        {/* Documents récents */}
+        {/* Documents récents
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Mes documents récents</h2>
           
@@ -157,7 +181,7 @@ const ComptableDashboard = () => {
               </Link>
             </div>
           )}
-        </div>
+        </div> */}
       </div>
     </AdminLayout>
   );
