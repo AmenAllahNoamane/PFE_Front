@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import AdminLayout from '../../layouts/AdminLayout';
-import { Search, Filter, Download, Eye, AlertCircle } from 'lucide-react';
+import { Search, Filter, Download, Eye, AlertCircle ,Trash2 } from 'lucide-react';
 import documentService from '../../api/documentService';
 //  PAGE LISTE DES DOCUMENTS (MANAGER)
 
@@ -31,7 +31,7 @@ const ManagerDocumentList = () => {
       const data = await documentService.getAllDocuments();
       setDocuments(data);
     } catch (err) {
-      console.error('Erreur loadloadDocuments:',err)
+      console.error('Erreur loadloadDocuments:', err)
       setError('Erreur lors du chargement des documents');
 
     } finally {
@@ -55,6 +55,22 @@ const ManagerDocumentList = () => {
 
     setFilteredDocs(filtered);
   };
+
+  const handleDelete = async (id, originalName) => {
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer "${originalName}" ?`)) {
+      return;
+    }
+
+    try {
+      await documentService.deleteDocument(id);
+      await loadDocuments(); // Recharger la liste
+    } catch (err) {
+      console.error(err)
+      alert('Erreur lors de la suppression');
+    }
+  };
+
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('fr-FR', {
@@ -63,19 +79,19 @@ const ManagerDocumentList = () => {
       year: 'numeric'
     });
   };
-const formatFileSize = (bytes) => {
-  if (bytes === 0) return '0 B';
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 B';
 
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  let i = 0;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    let i = 0;
 
-  while (bytes >= 1024 && i < sizes.length - 1) {
-    bytes /= 1024;
-    i++;
-  }
+    while (bytes >= 1024 && i < sizes.length - 1) {
+      bytes /= 1024;
+      i++;
+    }
 
-  return bytes.toFixed(2) + ' ' + sizes[i];
-};
+    return bytes.toFixed(2) + ' ' + sizes[i];
+  };
 
 
   const statusLabels = {
@@ -183,84 +199,94 @@ const formatFileSize = (bytes) => {
 
         {/* Tableau des documents */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            {loading ? (
+          {loading ? (
             <div className="p-12 text-center">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               <p className="text-gray-600 mt-4">Chargement des documents...</p>
             </div>
-          ): (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Nom
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Taille
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Statut
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Uploadé par
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredDocs.map((doc) => (
-                  <tr key={doc.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <p className="text-sm font-medium text-gray-900 truncate max-w-xs">{doc.originalName.split('.')[0]}</p>
-                      <p className="text-xs text-gray-500 mt-1">Uploadé le {formatDate(doc.createdAt)}</p>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <p className="text-sm text-gray-600"> {doc.fileType.split('/')[1] || 'FILE'}</p>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <p className="text-sm text-gray-600">
-                        {formatFileSize(doc.fileSize)} 
-                      </p>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[doc.statut]}`}>
-                        {statusLabels[doc.statut]}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <p className="text-sm text-gray-600"> {doc.user?.nom || 'Utilisateur'}</p>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <p className="text-sm font-medium text-gray-900">
-                         {formatDate(doc.createdAt)}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <Link
-                        to={`/manager/documents/${doc.id}`}
-                        className="inline-flex items-center gap-1 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      >
-                        <Eye size={16} />
-                        Voir
-                      </Link>
-                    </td>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Nom
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Taille
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Statut
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Uploadé par
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {filteredDocs.map((doc) => (
+                    <tr key={doc.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-medium text-gray-900 truncate max-w-xs">{doc.originalName.split('.')[0]}</p>
+                        <p className="text-xs text-gray-500 mt-1">Uploadé le {formatDate(doc.createdAt)}</p>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <p className="text-sm text-gray-600"> {doc.fileType.split('/')[1] || 'FILE'}</p>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <p className="text-sm text-gray-600">
+                          {formatFileSize(doc.fileSize)}
+                        </p>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[doc.statut]}`}>
+                          {statusLabels[doc.statut]}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <p className="text-sm text-gray-600"> {doc.user?.nom || 'Utilisateur'}</p>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <p className="text-sm font-medium text-gray-900">
+                          {formatDate(doc.createdAt)}
+                        </p>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <div className="flex items-center justify-end gap-2">
+                        <Link
+                          to={`/manager/documents/${doc.id}`}
+                          className="inline-flex items-center gap-1 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        >
+                          <Eye size={16} />
+                          Voir
+                        </Link>
+                        <button
+                          onClick={() => handleDelete(doc.id, doc.originalName)}
+                          className="inline-flex items-center gap-1 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Supprimer"
+                        >
+                          <Trash2 size={16} />
+                          Supprimer
+                        </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
- 
+
         {!loading && filteredDocs.length === 0 && (
           <div className="text-center py-12 bg-white rounded-xl border border-gray-200 mt-6">
             <p className="text-gray-600">
@@ -270,7 +296,7 @@ const formatFileSize = (bytes) => {
             </p>
           </div>
         )}
-        
+
       </div>
     </AdminLayout>
   );
