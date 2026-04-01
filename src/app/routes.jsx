@@ -22,6 +22,7 @@ import DocumentUpload from './pages/comptable/DocumentUpload';
 
 // Shared
 import DocumentDetail from './pages/shared/DocumentDetail';
+import Profile from './pages/shared/Profile';
 
 // Protected Route
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -64,6 +65,8 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     )
   },
+    
+ 
   {
     path: '/admin/users',
     element: (
@@ -96,7 +99,14 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     )
   },
-
+ {
+  path: '/admin/profile',
+  element: (
+    <ProtectedRoute allowedRoles={['ADMIN']}>
+      <Profile />
+    </ProtectedRoute>
+  )
+},
   // ROUTES MANAGER (admin + manager)
 
 
@@ -132,7 +142,14 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     )
   },
-
+{
+  path: '/manager/profile',
+  element: (
+    <ProtectedRoute allowedRoles={['MANAGER']}>
+      <Profile />
+    </ProtectedRoute>
+  )
+},
   
   // ROUTES COMPTABLE (admin + manager + comptable)
   
@@ -169,6 +186,14 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     )
   },
+  {
+  path: '/comptable/profile',
+  element: (
+    <ProtectedRoute allowedRoles={['COMPTABLE']}>
+      <Profile />
+    </ProtectedRoute>
+  )
+},
 
   // ========================================
   // 404 - PAGE NON TROUVÉE

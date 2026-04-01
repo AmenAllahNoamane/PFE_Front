@@ -1,16 +1,14 @@
 import { useState ,useEffect } from 'react';
 import { Save, X ,Loader2} from 'lucide-react';
 
-// ========================================
-// 📝 COMPOSANT FORMULAIRE UTILISATEUR
-// ========================================
+
+// COMPOSANT FORMULAIRE UTILISATEUR
+
 // Formulaire pour créer ou modifier un utilisateur
 // Utilisé dans UserCreate et UserEdit
 
 const UserForm = ({ user, onSubmit, onCancel,loading ,isEdit = false}) => {
-  // ========================================
-  // ÉTAT LOCAL DU FORMULAIRE
-  // ========================================
+  
   // Si on édite un utilisateur, on pré-remplit avec ses données
   // Sinon, on utilise des valeurs par défaut
   const [formData, setFormData] = useState({
@@ -22,10 +20,7 @@ const UserForm = ({ user, onSubmit, onCancel,loading ,isEdit = false}) => {
     password: '' // Toujours vide au départ (sécurité)
   });
    const [errors, setErrors] = useState({});
-  // ========================================
-  // GESTION DES CHANGEMENTS DANS LE FORMULAIRE
-  // ========================================
-
+  
 
     // Charger les données de l'utilisateur en mode édition
   useEffect(() => {

@@ -59,10 +59,12 @@ const authService = {
 // Changer mon mot de passe
   async updatePassword(oldPassword, newPassword) {
     try {
+      
       const response = await api.patch('/users/updatePassword', {
         oldPassword,
         newPassword,
       });
+      
       return response.data;
     } catch (error) {
       throw error.response?.data?.error || 'Erreur';

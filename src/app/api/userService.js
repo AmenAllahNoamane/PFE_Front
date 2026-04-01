@@ -80,7 +80,7 @@ const userService = {
     try{
 
       const response = await api.patch('/users/updateMe', userData);
-       response.data;
+      return response.data;
 
      }catch(error){
       const message = error.response?.data?.error || 'Erreur de modification';

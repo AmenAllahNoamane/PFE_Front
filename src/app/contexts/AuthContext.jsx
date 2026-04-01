@@ -13,12 +13,12 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  
+
   // CHARGEMENT DE LA SESSION AU DÉMARRAGE
-  
+
   // Vérifie si un utilisateur est déjà connecté (localStorage)
   useEffect(() => {
-  const loadUser = () => {
+    const loadUser = () => {
       try {
         const currentUser = authService.getCurrentUser();
         setUser(currentUser);
@@ -32,10 +32,10 @@ export const AuthProvider = ({ children }) => {
     loadUser();
   }, []);
 
-  
+
   // FONCTION DE CONNEXION
 
-  
+
   // Vérifie les identifiants et connecte l'utilisateur
 
   const login = async (email, password) => {
@@ -49,9 +49,9 @@ export const AuthProvider = ({ children }) => {
 
   };
 
-  
+
   // FONCTION DE DÉCONNEXION
-  
+
   // Supprime la session utilisateur
   const logout = () => {
     authService.logout();
@@ -59,14 +59,26 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
 
   };
+  const updateUser = (updatedUserData) => {
+    // Fusionner les nouvelles données avec l'utilisateur actuel
+    const updatedUser = {
+      ...user,
+      ...updatedUserData
+    };
+    // Mettre à jour le state
+    setUser(updatedUser);
 
+    // Mettre à jour localStorage
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+  };
   // Valeurs exposées à tous les composants enfants
   const value = {
     user,           // Utilisateur connecté
     loading,        // État de chargement
     login,          // Fonction de connexion
-    logout,         // Fonction de déconnexion
-   
+    logout,
+    updateUser,         // Fonction de déconnexion
+
   };
 
   return (
@@ -82,10 +94,10 @@ export const AuthProvider = ({ children }) => {
 // Simplifie l'utilisation du context dans les composants
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  
+
   if (!context) {
     throw new Error('useAuth doit être utilisé à l\'intérieur d\'un AuthProvider');
   }
-  
+
   return context;
 };
