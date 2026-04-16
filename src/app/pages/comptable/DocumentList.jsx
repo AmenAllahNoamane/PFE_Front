@@ -14,6 +14,7 @@ const ComptableDocumentList = () => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterType, setFilterType] = useState('all');
 
   // Charger les documents au montage
   useEffect(() => {
@@ -23,7 +24,7 @@ const ComptableDocumentList = () => {
   // Filtrer quand critères changent
   useEffect(() => {
     filterDocuments();
-  }, [documents, searchTerm, filterStatus]);
+  }, [documents, searchTerm, filterStatus,filterType]);
 
   const loadDocuments = async () => {
     try {
@@ -53,6 +54,11 @@ const ComptableDocumentList = () => {
     if (filterStatus !== 'all') {
       filtered = filtered.filter(doc => doc.statut === filterStatus);
     }
+    if (filterType !== 'all') {
+    filtered = filtered.filter(
+      doc => doc.analyse?.typeDocument === filterType
+    );
+  }
 
     setFilteredDocs(filtered);
   };
@@ -72,20 +78,30 @@ const ComptableDocumentList = () => {
   };
 
 
-  const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 B';
+  const getClientFournisseur = (doc) => {
+  const bc = doc.analyse?.bcFields;
 
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    let i = 0;
+  if (!bc) return 'Non disponible';
 
-    while (bytes >= 1024 && i < sizes.length - 1) {
-      bytes /= 1024;
-      i++;
-    }
+  // Priorité logique
+  if (bc.vendorName) return bc.vendorName;
+  if (bc.customerName) return bc.customerName;
 
-    return bytes.toFixed(2) + ' ' + sizes[i];
-  };
+  return 'Non identifié';
+};
 
+const getTotalAmount = (doc) => {
+  const bc = doc.analyse?.bcFields;
+
+  if (!bc) return '—';
+
+  const amount = bc.totalAmountIncludingTax;
+  const currency = bc.currency || 'TND';
+
+  if (!amount) return '—';
+
+  return `${amount} ${currency}`;
+};
   const formatDate = (dateString) => {
 
     const date = new Date(dateString);
@@ -95,6 +111,7 @@ const ComptableDocumentList = () => {
       year: 'numeric'
     });
   };
+  const types = ['all', 'Facture Achat', 'Facture Vente', 'Avoir Achat', 'Commande Achat','Commande Vente','Devis'];
   const statusLabels = {
     EN_COURS: 'En cours',
     TRAITEMENT: 'Traitement',
@@ -145,7 +162,7 @@ const ComptableDocumentList = () => {
           </div>
 
           {/* Filtre par type */}
-          {/* <div className="relative">
+           <div className="relative">
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
             <select
               value={filterType}
@@ -158,8 +175,7 @@ const ComptableDocumentList = () => {
                 </option>
               ))}
             </select>
-          </div> */}
-
+          </div> 
           {/* Filtre par statut */}
           <div className="relative">
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
@@ -197,7 +213,7 @@ const ComptableDocumentList = () => {
                     Type
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Taille
+                    Client / Fournisseur
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Statut
@@ -205,8 +221,10 @@ const ComptableDocumentList = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Date
                   </th>
-
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Montant
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider ">
                     Actions
                   </th>
                 </tr>
@@ -219,11 +237,11 @@ const ComptableDocumentList = () => {
                       <p className="text-xs text-gray-500 mt-1">Uploadé le {formatDate(doc.createdAt)}</p>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <p className="text-sm text-gray-600">{doc.fileType.split('/')[1] || 'FILE'}</p>
+                      <p className="text-sm text-gray-600">{doc.analyse?.typeDocument || 'Non analysé'}</p>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <p className="text-sm text-gray-600">
-                        {formatFileSize(doc.fileSize)}
+                        {getClientFournisseur(doc)}
                       </p>
                     </td>
 
@@ -236,25 +254,28 @@ const ComptableDocumentList = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <p className="text-sm text-gray-600"> {formatDate(doc.createdAt)}</p>
                     </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                      <p className="text-sm text-gray-600">{ getTotalAmount(doc) } </p>
+                    </td>
 
                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className="flex items-center justify-end gap-2">
+                      
                         <Link
                           to={`/comptable/documents/${doc.id}`}
-                          className="inline-flex items-center gap-1 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          className="inline-flex items-center gap-1 px-2 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                         >
                           <Eye size={16} />
                           Voir
                         </Link>
                         <button
                           onClick={() => handleDelete(doc.id, doc.originalName)}
-                          className="inline-flex items-center gap-1 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          className="inline-flex items-center gap-1 px-2 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Supprimer"
                         >
                           <Trash2 size={16} />
                           Supprimer
                         </button>
-                      </div>
+                     
                     </td>
                   </tr>
                 ))}

@@ -5,6 +5,7 @@ import { useState , useEffect } from 'react';
 import { mockUsers, mockDocuments, mockAuditLogs } from '../../utils/mockData';
 import { useAuth } from '../../contexts/AuthContext';
 import userService from '../../api/userService';
+import documentService from '../../api/documentService';
 
 //  DASHBOARD ADMINISTRATEUR
 
@@ -13,9 +14,11 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
+ const [documents, setDocuments] = useState([]);
+ const [loadingDocs, setLoadingDocs] = useState(true);
   useEffect(() => {
     loadUsers();
+    loadDocuments();
   }, []);
 
   const loadUsers = async () => {
@@ -31,10 +34,21 @@ const AdminDashboard = () => {
         ;
     }
   };
+
+  const loadDocuments = async () => {
+  try {
+    setLoadingDocs(true);
+    const data = await documentService.getAllDocuments();
+    setDocuments(data);
+    setLoadingDocs(false);
+  } catch (err) {
+    console.error('Erreur loadDocuments:', err);
+  }
+};
   // Statistiques
   const totalUsers = users.length;
-   const activeUsers = users.filter(u => u.isActive).length;
-  const totalDocuments = mockDocuments.length;
+  const activeUsers = users.filter(u => u.isActive).length;
+  const totalDocuments = documents.length;
   const recentLogs = mockAuditLogs.slice(0, 5);
 
 
@@ -86,7 +100,7 @@ const AdminDashboard = () => {
                     <Icon className="text-white" size={24} />
                   </div>
                 </div>
-                <p className="text-3xl font-bold text-gray-900">{loading?'...':stat.value}</p>
+                <p className="text-3xl font-bold text-gray-900">{(loading|| loadingDocs)?'...':stat.value}</p>
                 <p className="text-sm text-gray-600 mt-1">{stat.label}</p>
               </div>
             );
@@ -98,22 +112,22 @@ const AdminDashboard = () => {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Utilisateurs récents</h2>
             <div className="space-y-3">
-              {mockUsers.slice(0, 5).map((user) => (
+              {users.map((user) => (
                 <div key={user.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
-                      {user.name.charAt(0)}
+                      {user.prenom.charAt(0)}
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">{user.name}</p>
+                      <p className="font-medium text-gray-900">{user.prenom}</p>
                       <p className="text-sm text-gray-500 capitalize">{user.role}</p>
                     </div>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${user.status === 'active'
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${user.isActive === true
                       ? 'bg-green-100 text-green-800'
                       : 'bg-gray-100 text-gray-800'
                     }`}>
-                    {user.status === 'active' ? 'Actif' : 'Inactif'}
+                    {user.isActive === true ? 'Actif' : 'Inactif'}
                   </span>
                 </div>
               ))}

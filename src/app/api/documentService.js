@@ -30,7 +30,7 @@ class DocumentService {
 
   async getMyDocuments() {
     try {
-      const response = await api.get("/documents/myDocuments");
+      const response = await api.get("/documents/MyDocumentsWithAnalyse");
       return response.data;
     } catch (error) {
       const message =

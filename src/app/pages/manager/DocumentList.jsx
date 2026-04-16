@@ -12,7 +12,7 @@ const ManagerDocumentList = () => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-
+  const [filterType, setFilterType] = useState('all');
 
   // Charger tous les documents au montage
   useEffect(() => {
@@ -22,7 +22,7 @@ const ManagerDocumentList = () => {
   // Filtrer quand critères changent
   useEffect(() => {
     filterDocuments();
-  }, [documents, searchTerm, filterStatus]);
+  }, [documents, searchTerm, filterStatus,filterType]);
 
 
   const loadDocuments = async () => {
@@ -44,7 +44,7 @@ const ManagerDocumentList = () => {
     // Filtrer par recherche
     if (searchTerm) {
       filtered = filtered.filter(doc =>
-        doc.fileName.toLowerCase().includes(searchTerm.toLowerCase())
+        doc.originalName.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -52,6 +52,11 @@ const ManagerDocumentList = () => {
     if (filterStatus !== 'all') {
       filtered = filtered.filter(doc => doc.statut === filterStatus);
     }
+    if (filterType !== 'all') {
+    filtered = filtered.filter(
+      doc => doc.analyse?.typeDocument === filterType
+    );
+  }
 
     setFilteredDocs(filtered);
   };
@@ -79,20 +84,46 @@ const ManagerDocumentList = () => {
       year: 'numeric'
     });
   };
-  const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 B';
 
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    let i = 0;
+  const getClientFournisseur = (doc) => {
+  const bc = doc.analyse?.bcFields;
 
-    while (bytes >= 1024 && i < sizes.length - 1) {
-      bytes /= 1024;
-      i++;
-    }
+  if (!bc) return 'Non disponible';
 
-    return bytes.toFixed(2) + ' ' + sizes[i];
-  };
+  // Priorité logique
+  if (bc.vendorName) return bc.vendorName;
+  if (bc.customerName) return bc.customerName;
 
+  return 'Non identifié';
+};
+const getTotalAmount = (doc) => {
+  const bc = doc.analyse?.bcFields;
+
+  if (!bc) return '—';
+
+  const amount = bc.totalAmountIncludingTax;
+  const currency = bc.currency || 'TND';
+
+  if (!amount) return '—';
+
+  return `${amount} ${currency}`;
+};
+  
+  // const formatFileSize = (bytes) => {
+  //   if (bytes === 0) return '0 B';
+
+  //   const sizes = ['B', 'KB', 'MB', 'GB'];
+  //   let i = 0;
+
+  //   while (bytes >= 1024 && i < sizes.length - 1) {
+  //     bytes /= 1024;
+  //     i++;
+  //   }
+
+  //   return bytes.toFixed(2) + ' ' + sizes[i];
+  // };
+
+  const types = ['all', 'Facture Achat', 'Facture Vente', 'Avoir Achat', 'Commande Achat','Commande Vente','Devis'];
 
   const statusLabels = {
     EN_COURS: 'En cours',
@@ -164,8 +195,8 @@ const ManagerDocumentList = () => {
             />
           </div>
 
-          {/* Filtre par type */}
-          {/* <div className="relative">
+         {/* Filtre par type */}
+           <div className="relative">
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
             <select
               value={filterType}
@@ -178,7 +209,7 @@ const ManagerDocumentList = () => {
                 </option>
               ))}
             </select>
-          </div> */}
+          </div>
 
           {/* Filtre par statut */}
           <div className="relative">
@@ -216,17 +247,18 @@ const ManagerDocumentList = () => {
                       Type
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Taille
+                       Client / Fournisseur
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Statut
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Uploadé par
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Date
                     </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                     Montant
+                    </th>
+
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
@@ -237,14 +269,14 @@ const ManagerDocumentList = () => {
                     <tr key={doc.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4">
                         <p className="text-sm font-medium text-gray-900 truncate max-w-xs">{doc.originalName.split('.')[0]}</p>
-                        <p className="text-xs text-gray-500 mt-1">Uploadé le {formatDate(doc.createdAt)}</p>
+                        <p className="text-xs text-gray-500 mt-1">Par  {doc.user?.nom || 'Utilisateur'}</p>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <p className="text-sm text-gray-600"> {doc.fileType.split('/')[1] || 'FILE'}</p>
+                        <p className="text-sm text-gray-600"> {doc.analyse?.typeDocument || 'Non analysé'}</p>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <p className="text-sm text-gray-600">
-                          {formatFileSize(doc.fileSize)}
+                          {getClientFournisseur(doc)}
                         </p>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -252,16 +284,16 @@ const ManagerDocumentList = () => {
                           {statusLabels[doc.statut]}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <p className="text-sm text-gray-600"> {doc.user?.nom || 'Utilisateur'}</p>
-                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
-                        <p className="text-sm font-medium text-gray-900">
-                          {formatDate(doc.createdAt)}
+                      <p className="text-sm font-medium text-gray-600">
+                           {formatDate(doc.createdAt)}
                         </p>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <p className="text-sm text-gray-600"> {getTotalAmount(doc)}</p>
+                      </td>
+
                       <td className="px-6 py-4 whitespace-nowrap text-right">
-                        <div className="flex items-center justify-end gap-2">
                         <Link
                           to={`/manager/documents/${doc.id}`}
                           className="inline-flex items-center gap-1 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -277,7 +309,6 @@ const ManagerDocumentList = () => {
                           <Trash2 size={16} />
                           Supprimer
                         </button>
-                        </div>
                       </td>
                     </tr>
                   ))}
