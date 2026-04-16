@@ -73,5 +73,22 @@ class DocumentService {
       throw message;
     }
   }
+// sprint 2
+  // Sauvegarder les corrections manuelles (bcFields + bcLines)
+
+  // Appelé par handleSave dans DocumentDetail
+
+  async updateAnalyse(id, { bcFields, bcLines }) {
+    try {
+      const response = await api.put(`/documents/updateAnalyse/${id}`, {
+        bcFields,
+        bcLines,
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data?.error || "Erreur lors de la sauvegarde";
+    }
+  }
+
 }
 export default new DocumentService();

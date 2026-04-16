@@ -3,26 +3,11 @@ import { useParams, useNavigate } from 'react-router';
 import AdminLayout from '../../layouts/AdminLayout';
 import { useAuth } from '../../contexts/AuthContext';
 import documentService from '../../api/documentService';
+import { ArrowLeft,  FileText,  CheckCircle,  XCircle,  Send,  AlertTriangle, History,  Edit2, Save,  X as CloseIcon, Package} from 'lucide-react';
+import toast from 'react-hot-toast';
 
-import { 
-  ArrowLeft, 
-  FileText, 
-  CheckCircle, 
-  XCircle, 
-  Send, 
-  AlertTriangle,
-  History,
-  Edit2,
-  Save,
-  X as CloseIcon,
-  Package
-} from 'lucide-react';
-import { toast } from 'sonner';
-// ========================================
-// 📄 PAGE DÉTAIL DOCUMENT - VERSION DYNAMIQUE
-// ========================================
-// Adapté pour votre base de données et extraction dynamique
-// Affiche les champs selon le type de document (bcFields, bcLines)
+// PAGE DÉTAIL DOCUMENT 
+
 
 const DocumentDetail = () => {
   const { id } = useParams();
@@ -66,8 +51,8 @@ const DocumentDetail = () => {
       
       
       
-    setDocument(data.document || data);
-    setAnalyse(data.analyse || data.analyseDocument);
+    setDocument(data);
+    setAnalyse(data.analyse);
       
       // Initialiser les champs BC
       if (data.analyse?.bcFields) {
@@ -88,9 +73,8 @@ const DocumentDetail = () => {
     }
   };
 
-  // ========================================
   // NAVIGATION
-  // ========================================
+
   const getBackPath = () => {
     if (user.role === 'ADMIN') return '/manager/documents';
     if (user.role === 'MANAGER') return '/manager/documents';
@@ -169,17 +153,7 @@ const DocumentDetail = () => {
   
   const handleSave = async () => {
     try {
-      const response = await fetch(`/api/documents/${id}/analyse`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          bcFields,
-          bcLines
-        })
-      });
-
-      if (!response.ok) throw new Error('Erreur sauvegarde');
-
+      await documentService.updateAnalyse(id, { bcFields, bcLines });
       toast.success('Modifications enregistrées');
       setEditMode(false);
       loadDocumentData(); // Recharger les données
