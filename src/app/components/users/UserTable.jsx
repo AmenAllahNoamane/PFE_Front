@@ -111,7 +111,7 @@ const UserTable = ({ users, onDelete , onEdit , onToggle  }) => {
 
                      {/* Bouton Activer/Désactiver */}
                   <button
-                    onClick={() => onToggle(user.id)}
+                    onClick={() => onToggle(user.id,user.isActive)}
                     className={`p-2 rounded transition-colors ${
                       user.isActive
                         ? 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'

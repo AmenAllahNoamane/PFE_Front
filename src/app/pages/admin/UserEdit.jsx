@@ -4,6 +4,8 @@ import AdminLayout from '../../layouts/AdminLayout';
 import UserForm from '../../components/users/UserForm';
 import userService from '../../api/userService';
 import { ArrowLeft,Loader2, Edit} from 'lucide-react';
+import toast from 'react-hot-toast';
+import useConfirm from '../../components/useConfirm';
 
 
 //  PAGE MODIFICATION D'UTILISATEUR
@@ -16,6 +18,8 @@ const UserEdit = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const { confirm, ConfirmDialog } = useConfirm();
+
 
 // Charger l'utilisateur à modifier
   useEffect(() => {
@@ -54,7 +58,7 @@ const UserEdit = () => {
       
       await userService.updateUser(id, userData);
       
-      alert('Utilisateur modifié avec succès !');
+      toast.success('Utilisateur modifié avec succès !');
       navigate('/admin/users');
     } catch (err) {
       setError(err || 'Erreur lors de la modification');
@@ -64,7 +68,13 @@ const UserEdit = () => {
     }
   };
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
+    const ok = await confirm({
+    title: 'Annuler les modifications ?',
+    description: 'Les modifications non sauvegardées seront perdues.',
+    variant: 'danger',
+  });
+  if (!ok) return;
     navigate('/admin/users');
   };
 
@@ -111,7 +121,7 @@ const UserEdit = () => {
             />
     
         )}
-
+        {ConfirmDialog}
       </div>
     </AdminLayout>
   );

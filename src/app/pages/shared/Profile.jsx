@@ -18,6 +18,7 @@ import {
     Globe,
     Shield
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const Profile = () => {
     const { user: authUser, updateUser } = useAuth();
@@ -63,7 +64,6 @@ const Profile = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
     const [activeTab, setActiveTab] = useState('profile');
 
     // ========================================
@@ -102,7 +102,7 @@ const Profile = () => {
             [name]: value
         }));
         setError('');
-        setSuccess('');
+        
     };
 
     const handlePasswordChange = (e) => {
@@ -171,7 +171,7 @@ const Profile = () => {
         try {
             setSaving(true);
             setError('');
-            setSuccess('');
+           
 
             const result = await userService.updateMyProfile(formData);
 
@@ -184,10 +184,10 @@ const Profile = () => {
                 email: result.user.email
             });
 
-            setSuccess('Profil mis à jour avec succès !');
+            toast.success('Profil mis à jour avec succès !');
             setEditMode(false);
 
-            setTimeout(() => setSuccess(''), 3000);
+            
         } catch (err) {
             setError('Erreur lors de la mise à jour du profil');
             console.error(err)
@@ -225,11 +225,11 @@ const Profile = () => {
         try {
             setSaving(true);
             setError('');
-            setSuccess('');
+        
 
             await authService.updatePassword(passwordData.oldPassword, passwordData.newPassword);
 
-            setSuccess('Mot de passe modifié avec succès !');
+            toast.success('Mot de passe modifié avec succès !');
             setPasswordMode(false);
             setPasswordData({
                 oldPassword: '',
@@ -238,7 +238,7 @@ const Profile = () => {
             });
             setPasswordStrength(0);
 
-            setTimeout(() => setSuccess(''), 3000);
+            
         } catch (err) {
             setError(err);
             console.error(err)
@@ -328,12 +328,7 @@ const Profile = () => {
                     </div>
                 )}
 
-                {success && (
-                    <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
-                        <CheckCircle className="text-green-600 flex-shrink-0" size={20} />
-                        <p className="text-green-800">{success}</p>
-                    </div>
-                )}
+            
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Colonne gauche : Carte utilisateur */}

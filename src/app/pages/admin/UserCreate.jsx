@@ -4,9 +4,9 @@ import AdminLayout from '../../layouts/AdminLayout';
 import UserForm from '../../components/users/UserForm';
 import { ArrowLeft ,UserPlus } from 'lucide-react';
 import userService from '../../api/userService';
-// ========================================
+import toast from 'react-hot-toast';
+
 //  PAGE CRÉATION D'UTILISATEUR
-// ========================================
 
 const UserCreate = () => {
   const navigate = useNavigate();
@@ -21,7 +21,7 @@ const handleSubmit = async (userData) => {
       await userService.createUser(userData);
       
       
-      alert('Utilisateur créé avec succès !');
+      toast.success('Utilisateur créé avec succès !');
       navigate('/admin/users');
     } catch (err) {
       

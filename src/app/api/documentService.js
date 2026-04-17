@@ -80,15 +80,48 @@ class DocumentService {
 
   async updateAnalyse(id, { bcFields, bcLines }) {
     try {
-      const response = await api.put(`/documents/updateAnalyse/${id}`, {
-        bcFields,
-        bcLines,
-      });
+      const response = await api.put(`/documents/updateAnalyse/${id}`, {bcFields, bcLines,});
       return response.data;
     } catch (error) {
       throw error.response?.data?.error || "Erreur lors de la sauvegarde";
     }
   }
+
+   // Valider le document (statut → VALIDE)
+  // Appelé par handleValidate dans DocumentDetail
+  async validateDocument(id, { bcFields, bcLines }) {
+    try {
+      const response = await api.post(`/documents/validate/${id}`, {bcFields, bcLines,});
+      return response.data;
+    } catch (error) {
+      throw error.response?.data?.error || "Erreur lors de la validation";
+    }
+  }
+ async rejectDocument(id, { reason }) {
+    try {
+      const response = await api.post(`/documents/reject/${id}`, { reason });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data?.error || "Erreur lors du rejet";
+    }
+  }
+
+// Charge le fichier avec le token JWT et retourne un blob URL
+async getFileBlob(id) {
+  try {
+    const response = await api.get(`/documents/file/${id}`, {
+      responseType: 'blob',  // axios retourne un blob directement
+    });
+    const blob = new Blob([response.data], {
+      type: response.headers['content-type'],
+    });
+    return URL.createObjectURL(blob);
+  } catch (error) {
+    throw error.response?.data?.error || 'Erreur lors du chargement du fichier';
+  }
+}
+
+
 
 }
 export default new DocumentService();

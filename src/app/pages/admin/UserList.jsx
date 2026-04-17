@@ -5,6 +5,8 @@ import AdminLayout from '../../layouts/AdminLayout';
 import UserTable from '../../components/users/UserTable';
 import { Plus, Search,Loader2 } from 'lucide-react';
 import userService from '../../api/userService';
+import useConfirm from '../../components/useConfirm';
+import toast from 'react-hot-toast';
 
 // PAGE LISTE DES UTILISATEURS
 
@@ -14,6 +16,8 @@ const UserList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('')
+  const { confirm, ConfirmDialog } = useConfirm();
+
 
   // Charger la liste des utilisateurs
   useEffect(() => {
@@ -47,15 +51,17 @@ const UserList = () => {
   });
   // Supprimer un utilisateur
   const handleDelete = async (id) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
-      return;
-    }
-
+    const ok = await confirm({
+    title: 'Supprimer cet utilisateur ?',
+    description: 'Cette action est irréversible.',
+    variant: 'danger',
+  });
+  if (!ok) return;
     try {
       await userService.deleteUser(id);
       // Recharger la liste après suppression
       loadUsers();
-      alert('Utilisateur supprimé avec succès');
+       toast.success('Utilisateur supprimé avec succès');
     } catch (err) {
       alert(err || 'Erreur lors de la suppression');
       console.error('Erreur delete:', err);
@@ -63,13 +69,20 @@ const UserList = () => {
   };
 
   // Activer/Désactiver un utilisateur
-  const handleToggle = async (id) => {
+  const handleToggle = async (id,isActive) => {
+    const ok = await confirm({
+    title: isActive ? 'Désactiver cet utilisateur ?' : 'Activer cet utilisateur ?',
+    description: isActive ? 'L\'utilisateur ne pourra plus se connecter.' : 'L\'utilisateur pourra à nouveau se connecter.',
+    variant: isActive ? 'danger' : 'success',
+  });
+  if (!ok) return
     try {
       await userService.toggleUser(id);
       // Recharger la liste
       loadUsers();
+      toast.success(isActive ? 'Utilisateur désactivé' : 'Utilisateur activé');
     } catch (err) {
-      alert(err || 'Erreur lors du changement de statut');
+      toast.error(err || 'Erreur lors du changement de statut');
       console.error('Erreur toggle:', err);
     }
   };
@@ -138,7 +151,7 @@ const UserList = () => {
             <p className="text-gray-600"> Aucun utilisateur trouvé</p>
           </div>
         )}
-
+      {ConfirmDialog}
       </div>
     </AdminLayout>
   );

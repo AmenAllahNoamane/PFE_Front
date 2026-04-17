@@ -9,12 +9,16 @@ export default defineConfig({
     // Tailwind is not being actively used – do not remove them
     react(),
     tailwindcss(),
+    
   ],
   resolve: {
     alias: {
       // Alias @ to the src directory
       '@': path.resolve(__dirname, './src'),
     },
+  },
+  optimizeDeps: {
+    include: ['react-pdf'],
   },
 
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
