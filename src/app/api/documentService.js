@@ -6,7 +6,7 @@ class DocumentService {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await api.post("/documents/upload", formData, {
+      const response = await api.post("/documents/upload-analyse", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -121,7 +121,17 @@ async getFileBlob(id) {
   }
 }
 
+async getDashboardStats() {
+  try {
+    const response = await api.get('/documents/stats');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.error || 'Erreur lors du chargement des statistiques';
+  }
 
 
+
+
+}
 }
 export default new DocumentService();

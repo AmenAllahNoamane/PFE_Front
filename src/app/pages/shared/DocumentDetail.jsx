@@ -26,6 +26,8 @@ const DocumentDetail = () => {
   const [document, setDocument] = useState(null);
   const [fileObjectUrl, setFileObjectUrl] = useState(null);
   const [analyse, setAnalyse] = useState(null);
+  const [flags, setFlags] = useState([]);
+  const [warnings, setWarnings] = useState([]);
   const [editMode, setEditMode] = useState(false);
   const [bcFields, setBcFields] = useState({});
   const [bcLines, setBcLines] = useState([]);
@@ -38,6 +40,7 @@ const DocumentDetail = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pdfError, setPdfError] = useState(false);
   const [scale, setScale] = useState(1.0);
+  const [imageScale, setImageScale] = useState(1.0);
   const { confirm, ConfirmDialog } = useConfirm();
 
   // ── Chargement données ────────────────────────
@@ -67,6 +70,8 @@ const DocumentDetail = () => {
       setAnalyse(data.analyse);
       if (data.analyse?.bcFields) setBcFields(data.analyse.bcFields);
       if (data.analyse?.bcLines) setBcLines(data.analyse.bcLines);
+      setFlags(data.analyse?.flags || []);
+      setWarnings(data.analyse?.warnings || []);
     } catch (error) {
       console.error('Erreur chargement document:', error);
       toast.error('Impossible de charger le document');
@@ -189,7 +194,7 @@ const DocumentDetail = () => {
         { key: 'vendorName', label: 'Nom Fournisseur', type: 'text' },
         { key: 'invoiceDate', label: 'Date Facture', type: 'date' },
         { key: 'dueDate', label: 'Date Échéance', type: 'date' },
-        { key: 'currencyCode', label: 'Devise', type: 'select', options: ['TND', 'EUR', 'USD'] },
+        { key: 'currencyCode', label: 'Devise', type: 'select', options: ['TND', 'EUR', 'USD', 'CAD'] },
         { key: 'totalAmountExcludingTax', label: 'Montant HT', type: 'number' },
         { key: 'totalTaxAmount', label: 'Montant TVA', type: 'number' },
         { key: 'totalAmountIncludingTax', label: 'Montant TTC', type: 'number' },
@@ -201,7 +206,7 @@ const DocumentDetail = () => {
         { key: 'customerName', label: 'Nom Client', type: 'text' },
         { key: 'invoiceDate', label: 'Date Facture', type: 'date' },
         { key: 'dueDate', label: 'Date Échéance', type: 'date' },
-        { key: 'currencyCode', label: 'Devise', type: 'select', options: ['TND', 'EUR', 'USD'] },
+        { key: 'currencyCode', label: 'Devise', type: 'select', options: ['TND', 'EUR', 'USD', 'CAD'] },
         { key: 'totalAmountExcludingTax', label: 'Montant HT', type: 'number' },
         { key: 'totalTaxAmount', label: 'Montant TVA', type: 'number' },
         { key: 'totalAmountIncludingTax', label: 'Montant TTC', type: 'number' },
@@ -211,7 +216,7 @@ const DocumentDetail = () => {
         { key: 'vendorName', label: 'Nom Fournisseur', type: 'text' },
         { key: 'creditMemoDate', label: 'Date Avoir', type: 'date' },
         { key: 'invoiceNumber', label: 'N° Facture Origine', type: 'text' },
-        { key: 'currencyCode', label: 'Devise', type: 'select', options: ['TND', 'EUR', 'USD'] },
+        { key: 'currencyCode', label: 'Devise', type: 'select', options: ['TND', 'EUR', 'USD', 'CAD'] },
         { key: 'totalAmountExcludingTax', label: 'Montant HT', type: 'number' },
         { key: 'totalTaxAmount', label: 'Montant TVA', type: 'number' },
         { key: 'totalAmountIncludingTax', label: 'Montant TTC', type: 'number' },
@@ -222,7 +227,7 @@ const DocumentDetail = () => {
         { key: 'vendorName', label: 'Nom Fournisseur', type: 'text' },
         { key: 'orderDate', label: 'Date Commande', type: 'date' },
         { key: 'requestedReceiptDate', label: 'Date Livraison', type: 'date' },
-        { key: 'currencyCode', label: 'Devise', type: 'select', options: ['TND', 'EUR', 'USD'] },
+        { key: 'currencyCode', label: 'Devise', type: 'select', options: ['TND', 'EUR', 'USD', 'CAD'] },
         { key: 'totalAmountExcludingTax', label: 'Montant HT', type: 'number' },
         { key: 'totalTaxAmount', label: 'Montant TVA', type: 'number' },
         { key: 'totalAmountIncludingTax', label: 'Montant TTC', type: 'number' },
@@ -233,7 +238,7 @@ const DocumentDetail = () => {
         { key: 'customerName', label: 'Nom Client', type: 'text' },
         { key: 'orderDate', label: 'Date Commande', type: 'date' },
         { key: 'requestedDeliveryDate', label: 'Date Livraison', type: 'date' },
-        { key: 'currencyCode', label: 'Devise', type: 'select', options: ['TND', 'EUR', 'USD'] },
+        { key: 'currencyCode', label: 'Devise', type: 'select', options: ['TND', 'EUR', 'USD', 'CAD'] },
         { key: 'totalAmountExcludingTax', label: 'Montant HT', type: 'number' },
         { key: 'totalTaxAmount', label: 'Montant TVA', type: 'number' },
         { key: 'totalAmountIncludingTax', label: 'Montant TTC', type: 'number' },
@@ -244,7 +249,7 @@ const DocumentDetail = () => {
         { key: 'customerName', label: 'Nom Client', type: 'text' },
         { key: 'documentDate', label: 'Date Devis', type: 'date' },
         { key: 'validUntilDate', label: "Valide jusqu'au", type: 'date' },
-        { key: 'currencyCode', label: 'Devise', type: 'select', options: ['TND', 'EUR', 'USD'] },
+        { key: 'currencyCode', label: 'Devise', type: 'select', options: ['TND', 'EUR', 'USD', 'CAD'] },
         { key: 'totalAmountExcludingTax', label: 'Montant HT', type: 'number' },
         { key: 'totalTaxAmount', label: 'Montant TVA', type: 'number' },
         { key: 'totalAmountIncludingTax', label: 'Montant TTC', type: 'number' },
@@ -406,9 +411,45 @@ const DocumentDetail = () => {
 
               {/* Image */}
               {fileObjectUrl && isImage && (
-                <div className="border border-gray-200 rounded-lg overflow-hidden bg-white flex items-center justify-center" style={{ minHeight: '300px' }}>
-                  <img src={fileObjectUrl} alt={document.originalName}
-                    className="max-w-full max-h-96 object-contain" />
+                <div className="border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
+
+                  {/* Barre zoom */}
+                  <div className="flex items-center justify-end gap-2 px-4 py-2 bg-gray-100 border-b border-gray-200">
+                    <button
+                      onClick={() => setImageScale(s => Math.max(0.5, parseFloat((s - 0.25).toFixed(2))))}
+                      disabled={imageScale <= 0.5}
+                      className="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed text-gray-600 font-bold transition-colors">
+                      −
+                    </button>
+                    <span className="text-xs text-gray-600 font-medium w-12 text-center">
+                      {Math.round(imageScale * 100)}%
+                    </span>
+                    <button
+                      onClick={() => setImageScale(s => Math.min(3.0, parseFloat((s + 0.25).toFixed(2))))}
+                      disabled={imageScale >= 3.0}
+                      className="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed text-gray-600 font-bold transition-colors">
+                      +
+                    </button>
+                    <button
+                      onClick={() => setImageScale(1.0)}
+                      className="text-xs text-blue-600 hover:underline ml-1">
+                      Reset
+                    </button>
+                  </div>
+
+                  {/* Image avec zoom + scroll */}
+                  <div className="overflow-auto flex justify-center p-4" style={{ height: '620px' }}>
+                    <img
+                      src={fileObjectUrl}
+                      alt={document.originalName}
+                      style={{
+                        transform: `scale(${imageScale})`,
+                        transformOrigin: 'top center',
+                        transition: 'transform 0.2s'
+                      }}
+                    />
+                  </div>
+
                 </div>
               )}
 
@@ -509,6 +550,45 @@ const DocumentDetail = () => {
                 </div>
               )}
             </div>
+            {/* Flags & Warnings */}
+            {(flags.length > 0 || warnings.length > 0) && (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <AlertTriangle size={20} className="text-orange-500" />
+                  Alertes de qualité
+                </h2>
+
+                {/* Warnings */}
+                {warnings.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-xs font-medium text-gray-500 uppercase mb-2">Avertissements</p>
+                    <div className="space-y-2">
+                      {warnings.map((w, i) => (
+                        <div key={i} className="flex items-start gap-2 p-3 bg-orange-50 border border-orange-100 rounded-lg">
+                          <AlertTriangle size={14} className="text-orange-500 flex-shrink-0 mt-0.5" />
+                          <p className="text-sm text-orange-800">{w}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Flags */}
+                {flags.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase mb-2">Détails techniques</p>
+                    <div className="flex flex-wrap gap-2">
+                      {flags.map((flag, i) => (
+                        <span key={i}
+                          className="px-2.5 py-1 bg-red-50 text-red-700 border border-red-100 rounded-lg text-xs font-medium">
+                          {flag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Données extraites */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -608,6 +688,13 @@ const DocumentDetail = () => {
             {(document.statut === 'TRAITEMENT' || document.statut === 'REJETE') && user.role !== 'COMPTABLE' && (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">Actions</h2>
+                {/* Afficher le commentaire de rejet précédent si REJETE */}
+                {document.statut === 'REJETE' && analyse?.commentaireRejet && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-lg">
+                    <p className="text-xs font-medium text-red-600 mb-1">Raison du rejet précédent :</p>
+                    <p className="text-sm text-red-800">{analyse.commentaireRejet}</p>
+                  </div>
+                )}
                 <div className="space-y-3">
                   <button onClick={handleValidate}
                     className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
@@ -663,7 +750,7 @@ const DocumentDetail = () => {
                 {document.statut === 'REJETE' && (
                   <div className="flex items-start gap-3">
                     <div className="w-2 h-2 bg-red-500 rounded-full mt-2" />
-                    <div><p className="text-sm font-medium text-gray-900">Document rejeté</p><p className="text-xs text-gray-500">{analyse?.actionRecommandee || 'Voir les détails'}</p></div>
+                    <div><p className="text-sm font-medium text-gray-900">Document rejeté</p><p className="text-xs text-gray-500">{analyse?.commentaireRejet || 'Aucun commentaire'}</p></div>
                   </div>
                 )}
                 {document.statut === 'ENVOYE_BC' && (

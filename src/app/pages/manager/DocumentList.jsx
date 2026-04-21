@@ -3,6 +3,9 @@ import { Link } from 'react-router';
 import AdminLayout from '../../layouts/AdminLayout';
 import { Search, Filter, Download, Eye, AlertCircle ,Trash2 } from 'lucide-react';
 import documentService from '../../api/documentService';
+import useConfirm from '../../components/useConfirm';
+import toast from 'react-hot-toast';
+
 //  PAGE LISTE DES DOCUMENTS (MANAGER)
 
 const ManagerDocumentList = () => {
@@ -13,6 +16,7 @@ const ManagerDocumentList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterType, setFilterType] = useState('all');
+  const { confirm, ConfirmDialog } = useConfirm();
 
   // Charger tous les documents au montage
   useEffect(() => {
@@ -62,16 +66,19 @@ const ManagerDocumentList = () => {
   };
 
   const handleDelete = async (id, originalName) => {
-    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer "${originalName}" ?`)) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Supprimer ce document ?',
+      description: `Le document "${originalName}" sera définitivement supprimé.`,
+      variant: 'danger',
+    });
+    if (!ok) return;
 
     try {
       await documentService.deleteDocument(id);
       await loadDocuments(); // Recharger la liste
     } catch (err) {
       console.error(err)
-      alert('Erreur lors de la suppression');
+      toast.error('Erreur lors de la suppression');
     }
   };
 
@@ -327,7 +334,7 @@ const getTotalAmount = (doc) => {
             </p>
           </div>
         )}
-
+      {ConfirmDialog}
       </div>
     </AdminLayout>
   );

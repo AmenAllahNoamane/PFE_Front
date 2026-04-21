@@ -21,6 +21,15 @@ const UserTable = ({ users, onDelete , onEdit , onToggle  }) => {
         return role;
     }
   };
+    const formatDate = (dateString) => {
+
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       <div className="overflow-x-auto">
@@ -92,7 +101,7 @@ const UserTable = ({ users, onDelete , onEdit , onToggle  }) => {
 
                 {/* Colonne Dernière connexion */}
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <p className="text-sm text-gray-600"> A FAIRE </p>
+                  <p className="text-sm text-gray-600">{formatDate(user.lastLogin)}</p>
                 </td>
 
                 {/* Colonne Actions */}

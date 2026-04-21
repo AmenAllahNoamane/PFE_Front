@@ -3,6 +3,8 @@ import { Link } from 'react-router';
 import AdminLayout from '../../layouts/AdminLayout';
 import { Search, Filter, Eye, Trash2, AlertCircle } from 'lucide-react';
 import documentService from '../../api/documentService';
+import useConfirm from '../../components/useConfirm';
+import toast from 'react-hot-toast';
 
 //  PAGE LISTE DES DOCUMENTS (COMPTABLE)
 
@@ -15,6 +17,7 @@ const ComptableDocumentList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterType, setFilterType] = useState('all');
+  const { confirm, ConfirmDialog } = useConfirm();
 
   // Charger les documents au montage
   useEffect(() => {
@@ -24,7 +27,7 @@ const ComptableDocumentList = () => {
   // Filtrer quand critères changent
   useEffect(() => {
     filterDocuments();
-  }, [documents, searchTerm, filterStatus,filterType]);
+  }, [documents, searchTerm, filterStatus, filterType]);
 
   const loadDocuments = async () => {
     try {
@@ -34,7 +37,7 @@ const ComptableDocumentList = () => {
       setDocuments(data);
     } catch (err) {
       console.error(err)
-      setError( 'Erreur lors du chargement des documents');
+      setError('Erreur lors du chargement des documents');
     } finally {
       setLoading(false);
     }
@@ -55,53 +58,56 @@ const ComptableDocumentList = () => {
       filtered = filtered.filter(doc => doc.statut === filterStatus);
     }
     if (filterType !== 'all') {
-    filtered = filtered.filter(
-      doc => doc.analyse?.typeDocument === filterType
-    );
-  }
+      filtered = filtered.filter(
+        doc => doc.analyse?.typeDocument === filterType
+      );
+    }
 
     setFilteredDocs(filtered);
   };
 
   const handleDelete = async (id, originalName) => {
-    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer "${originalName}" ?`)) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Supprimer ce document ?',
+      description: `Le document "${originalName}" sera définitivement supprimé.`,
+      variant: 'danger',
+    });
+    if (!ok) return;
 
     try {
       await documentService.deleteDocument(id);
       await loadDocuments(); // Recharger la liste
     } catch (err) {
       console.error(err)
-      alert(  'Erreur lors de la suppression');
+      toast.error('Erreur lors de la suppression');
     }
   };
 
 
   const getClientFournisseur = (doc) => {
-  const bc = doc.analyse?.bcFields;
+    const bc = doc.analyse?.bcFields;
 
-  if (!bc) return 'Non disponible';
+    if (!bc) return 'Non disponible';
 
-  // Priorité logique
-  if (bc.vendorName) return bc.vendorName;
-  if (bc.customerName) return bc.customerName;
+    // Priorité logique
+    if (bc.vendorName) return bc.vendorName;
+    if (bc.customerName) return bc.customerName;
 
-  return 'Non identifié';
-};
+    return 'Non identifié';
+  };
 
-const getTotalAmount = (doc) => {
-  const bc = doc.analyse?.bcFields;
+  const getTotalAmount = (doc) => {
+    const bc = doc.analyse?.bcFields;
 
-  if (!bc) return '—';
+    if (!bc) return '—';
 
-  const amount = bc.totalAmountIncludingTax;
-  const currency = bc.currency || 'TND';
+    const amount = bc.totalAmountIncludingTax;
+    const currency = bc.currency || 'TND';
 
-  if (!amount) return '—';
+    if (!amount) return '—';
 
-  return `${amount} ${currency}`;
-};
+    return `${amount} ${currency}`;
+  };
   const formatDate = (dateString) => {
 
     const date = new Date(dateString);
@@ -111,7 +117,7 @@ const getTotalAmount = (doc) => {
       year: 'numeric'
     });
   };
-  const types = ['all', 'Facture Achat', 'Facture Vente', 'Avoir Achat', 'Commande Achat','Commande Vente','Devis'];
+  const types = ['all', 'Facture Achat', 'Facture Vente', 'Avoir Achat', 'Commande Achat', 'Commande Vente', 'Devis'];
   const statusLabels = {
     EN_COURS: 'En cours',
     TRAITEMENT: 'Traitement',
@@ -162,7 +168,7 @@ const getTotalAmount = (doc) => {
           </div>
 
           {/* Filtre par type */}
-           <div className="relative">
+          <div className="relative">
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
             <select
               value={filterType}
@@ -175,7 +181,7 @@ const getTotalAmount = (doc) => {
                 </option>
               ))}
             </select>
-          </div> 
+          </div>
           {/* Filtre par statut */}
           <div className="relative">
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
@@ -196,70 +202,70 @@ const getTotalAmount = (doc) => {
         {/* Tableau des documents */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
 
-           {loading ? (
+          {loading ? (
             <div className="p-12 text-center">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               <p className="text-gray-600 mt-4">Chargement des documents...</p>
             </div>
-          ) :(
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Nom
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Client / Fournisseur
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Statut
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Montant
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider ">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredDocs.map((doc) => (
-                  <tr key={doc.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <p className="text-sm font-medium text-gray-900 truncate max-w-xs">{doc.originalName.split('.')[0]}</p>
-                      <p className="text-xs text-gray-500 mt-1">Uploadé le {formatDate(doc.createdAt)}</p>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <p className="text-sm text-gray-600">{doc.analyse?.typeDocument || 'Non analysé'}</p>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <p className="text-sm text-gray-600">
-                        {getClientFournisseur(doc)}
-                      </p>
-                    </td>
-
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[doc.statut]}`}>
-                        {statusLabels[doc.statut]}
-                      </span>
-                    </td>
-
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <p className="text-sm text-gray-600"> {formatDate(doc.createdAt)}</p>
-                    </td>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Nom
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Client / Fournisseur
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Statut
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Montant
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider ">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {filteredDocs.map((doc) => (
+                    <tr key={doc.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-medium text-gray-900 truncate max-w-xs">{doc.originalName.split('.')[0]}</p>
+                        <p className="text-xs text-gray-500 mt-1">Uploadé le {formatDate(doc.createdAt)}</p>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                      <p className="text-sm text-gray-600">{ getTotalAmount(doc) } </p>
-                    </td>
+                        <p className="text-sm text-gray-600">{doc.analyse?.typeDocument || 'Non analysé'}</p>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <p className="text-sm text-gray-600">
+                          {getClientFournisseur(doc)}
+                        </p>
+                      </td>
 
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[doc.statut]}`}>
+                          {statusLabels[doc.statut]}
+                        </span>
+                      </td>
+
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <p className="text-sm text-gray-600"> {formatDate(doc.createdAt)}</p>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <p className="text-sm text-gray-600">{getTotalAmount(doc)} </p>
+                      </td>
+
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+
                         <Link
                           to={`/comptable/documents/${doc.id}`}
                           className="inline-flex items-center gap-1 px-2 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -275,13 +281,13 @@ const getTotalAmount = (doc) => {
                           <Trash2 size={16} />
                           Supprimer
                         </button>
-                     
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
 
@@ -294,6 +300,7 @@ const getTotalAmount = (doc) => {
             </p>
           </div>
         )}
+      {ConfirmDialog}
       </div>
     </AdminLayout>
   );

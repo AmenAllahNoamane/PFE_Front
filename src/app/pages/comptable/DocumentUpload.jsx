@@ -1,19 +1,22 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
+
 //import { useNavigate } from 'react-router';
 import AdminLayout from '../../layouts/AdminLayout';
 import { Upload, File, X, CheckCircle, AlertCircle } from 'lucide-react';
 import documentService from '../../api/documentService';
+import toast from 'react-hot-toast';
 
 //  PAGE UPLOAD DE DOCUMENT (COMPTABLE)
 
 const DocumentUpload = () => {
-  //const navigate = useNavigate();
+  const navigate = useNavigate();
   const [selectedFile, setSelectedFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
+  const [uploadPhase, setUploadPhase] = useState('idle');
   const [uploadProgress, setUploadProgress] = useState(0);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  //const [success, setSuccess] = useState(false);
 
   // Gérer le drag & drop
   const handleDrag = (e) => {
@@ -70,24 +73,33 @@ const DocumentUpload = () => {
   const handleUpload = async () => {
     if (!selectedFile) return;
 
-    setUploading(true);
-    setUploadProgress(0);
-    setError('')
-    setSuccess(false);
+    setError('');
+    //setSuccess(false);
+
     try {
+      // Phase 1 : upload fichier
+      setUploadPhase('uploading');
+      setUploadProgress(0);
+
       await documentService.uploadDocument(selectedFile, (progress) => {
         setUploadProgress(progress);
+        // Quand le fichier est envoyé → passer à la phase analyse
+        if (progress === 100) setUploadPhase('analyzing');
       });
-      setSuccess(true);
-      setUploading(false);
-      
+
+      // Phase 2 terminée (analyse faite côté serveur)
+      setUploadPhase('done');
+      //setSuccess(true);
+      toast.success(" ✓ Document uploadé avec succès")
+      setTimeout(() => navigate('/comptable/documents'), 1000);
+
     } catch (err) {
-      setError('Erreur lors de l\'upload');
+      setError( "Erreur lors du traitement");
+     // toast.error("Erreur lors du traitement")
       console.error(err)
-      setUploading(false);
+      setUploadPhase('idle');
       setUploadProgress(0);
     }
-
   };
 
   return (
@@ -99,22 +111,22 @@ const DocumentUpload = () => {
           <p className="text-gray-600 mt-2">Formats acceptés : PDF, JPG, PNG (Max 10MB)</p>
         </div>
 
-         {error && (
+        {error && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
             <AlertCircle className="text-red-600 flex-shrink-0" size={20} />
             <p className="text-red-800">{error}</p>
           </div>
         )}
-
+{/* 
         {success && (
           <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
             <CheckCircle className="text-green-600 flex-shrink-0" size={20} />
             <div>
               <p className="text-green-800 font-medium">✓ Document uploadé avec succès </p>
-             
+
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Zone de drop */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
@@ -125,8 +137,8 @@ const DocumentUpload = () => {
               onDragOver={handleDrag}
               onDrop={handleDrop}
               className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors ${dragActive
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-300 hover:border-gray-400'
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-gray-300 hover:border-gray-400'
                 }`}
             >
               <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full mb-6">
@@ -168,7 +180,7 @@ const DocumentUpload = () => {
                     </p>
                   </div>
                 </div>
-                {!uploading && (
+                {uploadPhase === 'idle' && (
                   <button
                     onClick={removeFile}
                     className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -178,24 +190,52 @@ const DocumentUpload = () => {
                 )}
               </div>
 
+              
               {/* Barre de progression */}
-              {uploading && (
+
+              {(uploadPhase === 'uploading' || uploadPhase === 'analyzing') && (
                 <div className="mb-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700">Upload en cours...</span>
-                    <span className="text-sm font-medium text-gray-700">{uploadProgress}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3">
-                    <div
-                      className="bg-blue-600 h-3 rounded-full transition-all duration-300"
-                      style={{ width: `${uploadProgress}%` }}
-                    ></div>
-                  </div>
+
+                  {/* Phase upload */}
+                  {uploadPhase === 'uploading' && (
+                    <>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-700">Envoi du fichier...</span>
+                        <span className="text-sm font-medium text-gray-700">{uploadProgress}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-3">
+                        <div
+                          className="bg-blue-600 h-3 rounded-full transition-all duration-300"
+                          style={{ width: `${uploadProgress}%` }}
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {/* Phase analyse IA */}
+                  {uploadPhase === 'analyzing' && (
+                    <>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-700">Analyse IA en cours...</span>
+                        <span className="text-xs text-gray-500">Peut prendre 30-60 secondes</span>
+                      </div>
+                      {/* Barre animée infinie */}
+                      <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                        <div className="h-3 rounded-full bg-blue-600 animate-pulse"
+                          style={{ width: '100%', opacity: 0.7 }} />
+                      </div>
+                      <div className="flex items-center gap-2 mt-3 text-sm text-gray-600">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600" />
+                        <span>OCR + classification + extraction des données...</span>
+                      </div>
+                    </>
+                  )}
+
                 </div>
               )}
 
               {/* Bouton d'upload */}
-              {!uploading && (
+              {uploadPhase === 'idle' && (
                 <button
                   onClick={handleUpload}
                   className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-lg"
