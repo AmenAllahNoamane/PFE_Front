@@ -543,10 +543,10 @@ const DocumentDetail = () => {
                   <AlertTriangle className="text-orange-600 flex-shrink-0 mt-0.5" size={18} />
                   <div className="flex-1">
                     <p className="text-sm font-medium text-orange-800">
-                      {analyse.scoreGlobal < 0.7 ? 'Vérification manuelle requise' : 'Vérifiez attentivement les données'}
+                      {analyse.scoreGlobal < 0.7 ? 'Vérification recommandée' : 'Vérifiez attentivement les données'}
                     </p>
-                    <p className="text-xs text-orange-600 mt-1">{analyse.actionRecommandee || 'Correction manuelle recommandée'}</p>
-                  </div>
+                    <p className="text-xs text-orange-600 mt-1">{analyse.actionRecommandee || 'Correction manuelle '}</p>
+                  </div>recommandée
                 </div>
               )}
             </div>
@@ -685,7 +685,7 @@ const DocumentDetail = () => {
             )}
 
             {/* Actions */}
-            {(document.statut === 'TRAITEMENT' || document.statut === 'REJETE') && user.role !== 'COMPTABLE' && (
+            {(document.statut === 'TRAITEMENT' || document.statut === 'REJETE')  && (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">Actions</h2>
                 {/* Afficher le commentaire de rejet précédent si REJETE */}

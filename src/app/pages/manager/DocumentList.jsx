@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import AdminLayout from '../../layouts/AdminLayout';
-import { Search, Filter, Download, Eye, AlertCircle ,Trash2 } from 'lucide-react';
+import { Search, Filter, Download, Eye, AlertCircle, Trash2, X } from 'lucide-react';
 import documentService from '../../api/documentService';
 import useConfirm from '../../components/useConfirm';
 import toast from 'react-hot-toast';
-
+import XLSXStyle from 'xlsx-js-style';
 //  PAGE LISTE DES DOCUMENTS (MANAGER)
 
 const ManagerDocumentList = () => {
@@ -17,7 +17,8 @@ const ManagerDocumentList = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterType, setFilterType] = useState('all');
   const { confirm, ConfirmDialog } = useConfirm();
-
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   // Charger tous les documents au montage
   useEffect(() => {
     loadDocuments();
@@ -26,7 +27,7 @@ const ManagerDocumentList = () => {
   // Filtrer quand critères changent
   useEffect(() => {
     filterDocuments();
-  }, [documents, searchTerm, filterStatus,filterType]);
+  }, [documents, searchTerm, filterStatus, filterType, dateFrom, dateTo]);
 
 
   const loadDocuments = async () => {
@@ -57,10 +58,20 @@ const ManagerDocumentList = () => {
       filtered = filtered.filter(doc => doc.statut === filterStatus);
     }
     if (filterType !== 'all') {
-    filtered = filtered.filter(
-      doc => doc.analyse?.typeDocument === filterType
-    );
-  }
+      filtered = filtered.filter(
+        doc => doc.analyse?.typeDocument === filterType
+      );
+    }
+    if (dateFrom) {
+      filtered = filtered.filter(doc =>
+        new Date(doc.createdAt) >= new Date(dateFrom)
+      );
+    }
+    if (dateTo) {
+      filtered = filtered.filter(doc =>
+        new Date(doc.createdAt) <= new Date(dateTo + 'T23:59:59')  // inclure toute la journée
+      );
+    }
 
     setFilteredDocs(filtered);
   };
@@ -82,7 +93,16 @@ const ManagerDocumentList = () => {
     }
   };
 
+  {/* Filtres */ }
+  const hasActiveFilters = searchTerm || filterType !== 'all' || filterStatus !== 'all' || dateFrom || dateTo;
 
+  const handleReset = () => {
+    setSearchTerm('');
+    setFilterType('all');
+    setFilterStatus('all');
+    setDateFrom('');
+    setDateTo('');
+  };
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('fr-FR', {
@@ -93,29 +113,29 @@ const ManagerDocumentList = () => {
   };
 
   const getClientFournisseur = (doc) => {
-  const bc = doc.analyse?.bcFields;
+    const bc = doc.analyse?.bcFields;
 
-  if (!bc) return 'Non disponible';
+    if (!bc) return 'Non disponible';
 
-  // Priorité logique
-  if (bc.vendorName) return bc.vendorName;
-  if (bc.customerName) return bc.customerName;
+    // Priorité logique
+    if (bc.vendorName) return bc.vendorName;
+    if (bc.customerName) return bc.customerName;
 
-  return 'Non identifié';
-};
-const getTotalAmount = (doc) => {
-  const bc = doc.analyse?.bcFields;
+    return 'Non identifié';
+  };
+  const getTotalAmount = (doc) => {
+    const bc = doc.analyse?.bcFields;
 
-  if (!bc) return '—';
+    if (!bc) return '—';
 
-  const amount = bc.totalAmountIncludingTax;
-  const currency = bc.currency || 'TND';
+    const amount = bc.totalAmountIncludingTax;
+    const currency = bc.currencyCode || 'TND';
 
-  if (!amount) return '—';
+    if (!amount) return '—';
 
-  return `${amount} ${currency}`;
-};
-  
+    return `${amount} ${currency}`;
+  };
+
   // const formatFileSize = (bytes) => {
   //   if (bytes === 0) return '0 B';
 
@@ -130,7 +150,7 @@ const getTotalAmount = (doc) => {
   //   return bytes.toFixed(2) + ' ' + sizes[i];
   // };
 
-  const types = ['all', 'Facture Achat', 'Facture Vente', 'Avoir Achat', 'Commande Achat','Commande Vente','Devis'];
+  const types = ['all', 'Facture Achat', 'Facture Vente', 'Avoir Achat', 'Commande Achat', 'Commande Vente', 'Devis'];
 
   const statusLabels = {
     EN_COURS: 'En cours',
@@ -152,12 +172,129 @@ const getTotalAmount = (doc) => {
 
   // Export CSV (fonctionnalité Sprint 3)
   const handleExport = () => {
-    alert('Export CSV disponible au Sprint 3');
+    if (filteredDocs.length === 0) {
+      toast.error('Aucun document à exporter');
+      return;
+    }
+
+    // Couleurs par statut
+    const statusColors = {
+      EN_COURS: { fgColor: { rgb: 'DBEAFE' } }, // bleu clair
+      TRAITEMENT: { fgColor: { rgb: 'FEF9C3' } }, // jaune clair
+      VALIDE: { fgColor: { rgb: 'DCFCE7' } }, // vert clair
+      REJETE: { fgColor: { rgb: 'FEE2E2' } }, // rouge clair
+      ENVOYE_BC: { fgColor: { rgb: 'F3E8FF' } }, // violet clair
+    };
+
+    const statusTextColors = {
+      EN_COURS: { rgb: '1D4ED8' },
+      TRAITEMENT: { rgb: '854D0E' },
+      VALIDE: { rgb: '166534' },
+      REJETE: { rgb: '991B1B' },
+      ENVOYE_BC: { rgb: '6B21A8' },
+    };
+
+    // Style en-tête
+    const headerStyle = {
+      font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 11 },
+      fill: { fgColor: { rgb: '2563EB' } },       // bleu
+      alignment: { horizontal: 'center', vertical: 'center' },
+      border: {
+        top: { style: 'thin', color: { rgb: 'FFFFFF' } },
+        bottom: { style: 'thin', color: { rgb: 'FFFFFF' } },
+        left: { style: 'thin', color: { rgb: 'FFFFFF' } },
+        right: { style: 'thin', color: { rgb: 'FFFFFF' } },
+      }
+    };
+
+    // Style cellule normale
+    const cellStyle = {
+      font: { sz: 10, color: { rgb: '374151' } },
+      alignment: { vertical: 'center' },
+      border: {
+        top: { style: 'thin', color: { rgb: 'E5E7EB' } },
+        bottom: { style: 'thin', color: { rgb: 'E5E7EB' } },
+        left: { style: 'thin', color: { rgb: 'E5E7EB' } },
+        right: { style: 'thin', color: { rgb: 'E5E7EB' } },
+      }
+    };
+
+    // Ligne alternée (gris très clair)
+    const cellStyleAlt = {
+      ...cellStyle,
+      fill: { fgColor: { rgb: 'F9FAFB' } }
+    };
+
+    const headers = ['N°', 'Nom du document', 'Type', 'Client / Fournisseur', 'Statut', 'Date', 'Montant', 'Uploadé par'];
+
+    // Construire les données avec styles
+    const wsData = [];
+
+    // Ligne d'en-tête
+    wsData.push(
+      headers.map(h => ({
+        v: h,
+        t: 's',
+        s: headerStyle
+      }))
+    );
+
+    // Lignes de données
+    filteredDocs.forEach((doc, index) => {
+      const isAlt = index % 2 === 1;
+      const base = isAlt ? cellStyleAlt : cellStyle;
+      const statut = doc.statut;
+
+      const row = [
+        { v: index + 1, t: 'n', s: { ...base, alignment: { horizontal: 'center' } } },
+        { v: doc.originalName.split('.')[0], t: 's', s: base },
+        { v: doc.analyse?.typeDocument || 'Non analysé', t: 's', s: base },
+        { v: getClientFournisseur(doc), t: 's', s: base },
+        {
+          v: statusLabels[statut] || statut,
+          t: 's',
+          s: {
+            ...base,
+            fill: statusColors[statut] || base.fill,
+            font: { ...base.font, bold: true, color: statusTextColors[statut] || base.font.color },
+            alignment: { horizontal: 'center' },
+          }
+        },
+        { v: formatDate(doc.createdAt), t: 's', s: { ...base, alignment: { horizontal: 'center' } } },
+        { v: getTotalAmount(doc), t: 's', s: { ...base, alignment: { horizontal: 'right' } } },
+        { v: doc.user?.nom || 'Inconnu', t: 's', s: base },
+      ];
+
+      wsData.push(row);
+    });
+
+    // Créer la feuille
+    const ws = XLSXStyle.utils.aoa_to_sheet(wsData);
+
+    // Largeur des colonnes
+    ws['!cols'] = [
+      { wch: 5 },  // N°
+      { wch: 30 },  // Nom
+      { wch: 18 },  // Type
+      { wch: 25 },  // Client
+      { wch: 14 },  // Statut
+      { wch: 14 },  // Date
+      { wch: 15 },  // Montant
+      { wch: 15 },  // Uploadé par
+    ];
+
+    // Hauteur des lignes
+    ws['!rows'] = [
+      { hpt: 28 },  // en-tête plus haute
+      ...filteredDocs.map(() => ({ hpt: 20 }))
+    ];
+
+    const wb = XLSXStyle.utils.book_new();
+    XLSXStyle.utils.book_append_sheet(wb, ws, 'Documents');
+
+    XLSXStyle.writeFile(wb, `documents_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    toast.success(`${filteredDocs.length} document(s) exporté(s)`);
   };
-
-
-
-
 
 
 
@@ -173,10 +310,9 @@ const getTotalAmount = (doc) => {
           </div>
           <button
             onClick={handleExport}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
+            className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"          >
             <Download size={20} />
-            Exporter CSV
+            Exporter Excel
           </button>
         </div>
 
@@ -189,50 +325,111 @@ const getTotalAmount = (doc) => {
         )}
 
         {/* Filtres */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-          {/* Recherche */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Rechercher par nom de fichier..."
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-            />
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+
+          {/* Ligne filtres */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+
+            {/* Recherche — 4 cols */}
+            <div className="relative lg:col-span-4">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Nom, numéro..."
+                className={`w-full pl-9 pr-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-colors
+          ${searchTerm ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'}`}
+              />
+            </div>
+
+            {/* Type — 2 cols */}
+            {/* Type — 2 cols */}
+            <div className="relative lg:col-span-2">
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className={`w-full pl-9 pr-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none transition-colors
+              ${filterType !== 'all' ? 'border-blue-400 bg-blue-50/30 text-blue-700 font-medium' : 'border-gray-300 text-gray-600'}`}
+              >
+                {types.map(type => (
+                  <option key={type} value={type}>
+                    {type === 'all' ? 'Tous les types' : type}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Statut — 2 cols */}
+            <div className="relative lg:col-span-2">
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className={`w-full pl-9 pr-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none transition-colors
+                            ${filterStatus !== 'all' ? 'border-blue-400 bg-blue-50/30 text-blue-700 font-medium' : 'border-gray-300 text-gray-600'}`}
+                      >
+                {statuses.map(status => (
+                  <option key={status} value={status}>
+                    {status === 'all' ? 'Tous les statuts' : statusLabels[status]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {/* Dates — 3 cols */}
+            <div className="flex items-center gap-2 lg:col-span-3">
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className={`flex-1 px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-colors
+                  ${dateFrom ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'}`}
+              />
+              <span className="text-gray-300 text-xs">—</span>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className={`flex-1 px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-colors
+                    ${dateTo ? 'border-blue-400 bg-blue-50/30' : 'border-gray-300'}`}
+              />
+            </div>
+
+
+
           </div>
 
-         {/* Filtre par type */}
-           <div className="relative">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none appearance-none"
-            >
-              {types.map(type => (
-                <option key={type} value={type}>
-                  {type === 'all' ? 'Tous les types' : type}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Footer barre : badges actifs + compteur */}
+          {hasActiveFilters && (
+            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100 flex-wrap">
+              <span className="text-xs text-gray-400">Filtres actifs :</span>
 
-          {/* Filtre par statut */}
-          <div className="relative">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none appearance-none"
-            >
-              {statuses.map(status => (
-                <option key={status} value={status}>
-                  {status === 'all' ? 'Tous les statuts' : statusLabels[status]}
-                </option>
-              ))}
-            </select>
-          </div>
+              {filterType !== 'all' && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-full text-xs">
+                  {filterType}
+                  <button onClick={() => setFilterType('all')} className="hover:text-blue-900 ml-0.5">×</button>
+                </span>
+              )}
+              {filterStatus !== 'all' && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-full text-xs">
+                  {statusLabels[filterStatus]}
+                  <button onClick={() => setFilterStatus('all')} className="hover:text-blue-900 ml-0.5">×</button>
+                </span>
+              )}
+              {(dateFrom || dateTo) && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-full text-xs">
+                  {dateFrom || '...'} → {dateTo || '...'}
+                  <button onClick={() => { setDateFrom(''); setDateTo(''); }} className="hover:text-blue-900 ml-0.5">×</button>
+                </span>
+              )}
+
+              <span className="ml-auto text-xs text-gray-400 font-medium">
+                {filteredDocs.length} résultat(s)
+              </span>
+            </div>
+          )}
+
         </div>
 
         {/* Tableau des documents */}
@@ -254,7 +451,7 @@ const getTotalAmount = (doc) => {
                       Type
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                       Client / Fournisseur
+                      Client / Fournisseur
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Statut
@@ -263,7 +460,7 @@ const getTotalAmount = (doc) => {
                       Date
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                     Montant
+                      Montant
                     </th>
 
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -292,8 +489,8 @@ const getTotalAmount = (doc) => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <p className="text-sm font-medium text-gray-600">
-                           {formatDate(doc.createdAt)}
+                        <p className="text-sm font-medium text-gray-600">
+                          {formatDate(doc.createdAt)}
                         </p>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -334,7 +531,7 @@ const getTotalAmount = (doc) => {
             </p>
           </div>
         )}
-      {ConfirmDialog}
+        {ConfirmDialog}
       </div>
     </AdminLayout>
   );

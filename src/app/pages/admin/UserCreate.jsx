@@ -25,7 +25,7 @@ const handleSubmit = async (userData) => {
       navigate('/admin/users');
     } catch (err) {
       
-      setError('Erreur lors de la création');
+      setError(err);
       console.error('Erreur create:', err);
     } finally {
       setLoading(false);

@@ -52,6 +52,7 @@ const DocumentUpload = () => {
     const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
     if (!allowedTypes.includes(file.type)) {
       setError('Type de fichier non supporté. Formats acceptés : PDF, JPG, PNG');
+      
       return;
     }
 
@@ -90,7 +91,7 @@ const DocumentUpload = () => {
       // Phase 2 terminée (analyse faite côté serveur)
       setUploadPhase('done');
       //setSuccess(true);
-      toast.success(" ✓ Document uploadé avec succès")
+      toast.success(" Document uploadé avec succès")
       setTimeout(() => navigate('/comptable/documents'), 1000);
 
     } catch (err) {
@@ -250,7 +251,7 @@ const DocumentUpload = () => {
 
         {/* Informations supplémentaires */}
         <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
-          <h3 className="font-semibold text-blue-900 mb-3">ℹ️ Que se passe-t-il après l'upload ?</h3>
+          <h3 className="font-semibold text-blue-900 mb-3">Que se passe-t-il après l'upload ?</h3>
           <ul className="space-y-2 text-sm text-blue-800">
             <li className="flex items-start gap-2">
               <span className="text-blue-600 mt-0.5">•</span>
@@ -265,7 +266,6 @@ const DocumentUpload = () => {
               <span>Les données importantes sont extraites (montant, date, client, etc.)</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-blue-600 mt-0.5">���</span>
               <span>Vous pourrez ensuite valider ou corriger les données extraites</span>
             </li>
           </ul>
