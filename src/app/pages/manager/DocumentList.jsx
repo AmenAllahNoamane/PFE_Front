@@ -344,7 +344,6 @@ const ManagerDocumentList = () => {
             </div>
 
             {/* Type — 2 cols */}
-            {/* Type — 2 cols */}
             <div className="relative lg:col-span-2">
               <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
               <select

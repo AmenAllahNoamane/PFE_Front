@@ -2,24 +2,24 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import AdminLayout from '../../layouts/AdminLayout';
 import { useAuth } from '../../contexts/AuthContext';
-import { FileText, Upload, CheckCircle, Clock , AlertCircle} from 'lucide-react';
+import { FileText, Upload, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import documentService from '../../api/documentService';
 
 //  DASHBOARD COMPTABLE
 
 
 const ComptableDashboard = () => {
-  
+
   const { user } = useAuth();
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
- // Charger les documents au montage
+  // Charger les documents au montage
   useEffect(() => {
     loadDocuments();
   }, []);
- 
+
   const loadDocuments = async () => {
     try {
       setLoading(true);
@@ -30,17 +30,25 @@ const ComptableDashboard = () => {
     } catch (err) {
       setError('Erreur lors du chargement des documents');
       console.error(err)
-    } finally{
+    } finally {
       setLoading(false);
     }
   };
 
-    const stats = {
+  const stats = {
     total: documents.length,
     enCours: documents.filter(d => d.statut === 'EN_COURS').length,
     traitement: documents.filter(d => d.statut === 'TRAITEMENT').length,
     validé: documents.filter(d => d.statut === 'VALIDE').length,
     rejeté: documents.filter(d => d.statut === 'REJETE').length
+  };
+  const formatDate = (dateStr) => {
+    const d = new Date(dateStr);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
   };
 
   return (
@@ -51,7 +59,7 @@ const ComptableDashboard = () => {
           <h1 className="text-3xl font-bold text-gray-900">Mon tableau de bord</h1>
           <p className="text-gray-600 mt-2">Bienvenue {user.nom}</p>
         </div>
-          {error && (
+        {error && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
             <AlertCircle className="text-red-600 flex-shrink-0" size={20} />
             <p className="text-red-800">{error}</p>
@@ -134,11 +142,15 @@ const ComptableDashboard = () => {
           </Link>
         </div>
 
-        {/* Documents récents
+        {/* Documents récents */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Mes documents récents</h2>
-          
-          {recentDocs.length > 0 ? (
+
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />
+            </div>
+          ) : documents.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50">
@@ -147,22 +159,36 @@ const ComptableDashboard = () => {
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Montant</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Montant</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {recentDocs.map((doc) => (
+                  {documents.slice(0, 5).map((doc) => (
                     <tr key={doc.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm text-gray-900">{doc.name}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{doc.type}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900 max-w-xs truncate">
+                        {doc.originalName}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {doc.analyse?.typeDocument || '—'}
+                      </td>
                       <td className="px-4 py-3">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[doc.status]}`}>
-                          {statusLabels[doc.status]}
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${doc.statut === 'VALIDE' ? 'bg-green-100 text-green-800' :
+                          doc.statut === 'REJETE' ? 'bg-red-100 text-red-800' :
+                            doc.statut === 'TRAITEMENT' ? 'bg-purple-100 text-purple-800' :
+                              doc.statut === 'ENVOYE_BC' ? 'bg-indigo-100 text-indigo-800' :
+                                'bg-blue-100 text-blue-800'
+                          }`}>
+                          {{
+                            EN_COURS: 'En cours', TRAITEMENT: 'En traitement',
+                            VALIDE: 'Validé', REJETE: 'Rejeté', ENVOYE_BC: 'Envoyé BC'
+                          }[doc.statut] || doc.statut}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{doc.date}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900 text-right font-medium">
-                        {doc.amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {formatDate(doc.createdAt)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {doc.analyse?.bcFields?.totalAmountIncludingTax ? `${doc.analyse.bcFields.totalAmountIncludingTax} ${doc.analyse.bcFields.currencyCode || 'TND'}`: '—'}
                       </td>
                     </tr>
                   ))}
@@ -181,7 +207,7 @@ const ComptableDashboard = () => {
               </Link>
             </div>
           )}
-        </div> */}
+        </div>
       </div>
     </AdminLayout>
   );

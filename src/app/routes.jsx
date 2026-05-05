@@ -136,11 +136,7 @@ export const router = createBrowserRouter([
   },
   {
     path: '/manager/audit',
-    element: (
-      <ProtectedRoute allowedRoles={['MANAGER']}>
-        <AdminAuditLog />
-      </ProtectedRoute>
-    )
+    element: <Navigate to="/unauthorized" replace />
   },
 {
   path: '/manager/profile',

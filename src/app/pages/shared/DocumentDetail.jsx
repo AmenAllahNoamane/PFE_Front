@@ -10,12 +10,13 @@ import 'react-pdf/dist/Page/TextLayer.css';
 import {
   ArrowLeft, FileText, CheckCircle, XCircle, Send,
   AlertTriangle, History, Edit2, Save, X as CloseIcon,
-  Package, Eye, ChevronLeft, ChevronRight
+  Package, Eye, ChevronLeft, ChevronRight, Download
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // Configuration worker react-pdf
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+
 
 const DocumentDetail = () => {
   const { id } = useParams();
@@ -172,9 +173,25 @@ const DocumentDetail = () => {
   };
 
   const handleSendToBC = async () => {
-    if (!window.confirm('Envoyer ce document vers Business Central ?')) return;
-    toast.info('Fonctionnalité disponible au sprint suivant');
-  };
+  const ok = await confirm({
+    title: 'Envoyer vers Business Central ?',
+    description: 'Le document sera envoyé vers BC et ne pourra plus être modifié.',
+    variant: 'success',
+  });
+  if (!ok) return;
+
+  try {
+    toast.loading('Envoi en cours...', { id: 'bc-send' });
+    const result = await documentService.sendToBC(id);
+    toast.success(
+      `Envoyé avec succès ! N° BC : ${result.bcResult.bcNumber}`,
+      { id: 'bc-send' }
+    );
+    navigate(getBackPath());
+  } catch (error) {
+    toast.error(error || 'Erreur lors de l\'envoi', { id: 'bc-send' });
+  }
+};
 
   const statutLabels = {
     EN_COURS: 'En cours', TRAITEMENT: 'En traitement',
@@ -256,6 +273,14 @@ const DocumentDetail = () => {
       ],
     };
     return configs[analyse?.typeDocument] || [];
+  };
+  const handleDownload = async () => {
+    try {
+      await documentService.downloadDocument(id, document.originalName);
+      toast.success('Téléchargement démarré');
+    } catch (error) {
+      toast.error('Erreur lors du téléchargement');
+    }
   };
 
   if (loading) {
@@ -463,10 +488,17 @@ const DocumentDetail = () => {
                       {numPages && isPdf && ` • ${numPages} page${numPages > 1 ? 's' : ''}`}
                     </p>
                   </div>
-                  <a href={fileObjectUrl} target="_blank" rel="noreferrer"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
-                    <Eye size={16} /> Ouvrir
-                  </a>
+                  <div className="flex items-center gap-2">
+                    <a href={fileObjectUrl} target="_blank" rel="noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                      <Eye size={16} /> Ouvrir
+                    </a>
+                    <button
+                      onClick={handleDownload}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">
+                      <Download size={16} /> Télécharger
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -685,7 +717,7 @@ const DocumentDetail = () => {
             )}
 
             {/* Actions */}
-            {(document.statut === 'TRAITEMENT' || document.statut === 'REJETE')  && (
+            {(document.statut === 'TRAITEMENT' || document.statut === 'REJETE') && (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">Actions</h2>
                 {/* Afficher le commentaire de rejet précédent si REJETE */}

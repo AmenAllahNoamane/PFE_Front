@@ -15,6 +15,7 @@ const DocumentUpload = () => {
   const [uploadPhase, setUploadPhase] = useState('idle');
   const [uploadProgress, setUploadProgress] = useState(0);
   const [dragActive, setDragActive] = useState(false);
+  const [uploadResult, setUploadResult] = useState(null);
   const [error, setError] = useState('');
   //const [success, setSuccess] = useState(false);
 
@@ -82,17 +83,17 @@ const DocumentUpload = () => {
       setUploadPhase('uploading');
       setUploadProgress(0);
 
-      await documentService.uploadDocument(selectedFile, (progress) => {
+      const result = await documentService.uploadDocument(selectedFile, (progress) => {
         setUploadProgress(progress);
         // Quand le fichier est envoyé → passer à la phase analyse
         if (progress === 100) setUploadPhase('analyzing');
       });
 
       // Phase 2 terminée (analyse faite côté serveur)
+      setUploadResult(result);
       setUploadPhase('done');
       //setSuccess(true);
       toast.success(" Document uploadé avec succès")
-      setTimeout(() => navigate('/comptable/documents'), 1000);
 
     } catch (err) {
       setError( "Erreur lors du traitement");
@@ -271,6 +272,83 @@ const DocumentUpload = () => {
           </ul>
         </div>
       </div>
+      {uploadPhase === 'done' && uploadResult && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm" />
+    
+    <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-md p-6">
+      
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+          <CheckCircle className="text-green-600" size={24} />
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">Document traité !</h3>
+          <p className="text-sm text-gray-500">L'analyse IA est terminée</p>
+        </div>
+      </div>
+
+      {/* Infos document */}
+      <div className="bg-gray-50 rounded-xl p-4 mb-6 space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-600">Fichier</span>
+          <span className="text-sm font-medium text-gray-900 truncate max-w-48">
+            {uploadResult.document?.originalName}
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-600">Type détecté</span>
+          <span className="text-sm font-medium text-blue-600">
+            {uploadResult.analyse?.typeDocument || 'Non classifié'}
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-600">Score global</span>
+          <span className={`text-sm font-medium px-2 py-0.5 rounded-full ${
+            uploadResult.analyse?.scores?.global >= 0.9 
+              ? 'bg-green-100 text-green-700' 
+              : uploadResult.analyse?.scores?.global >= 0.7 
+              ? 'bg-orange-100 text-orange-700' 
+              : 'bg-red-100 text-red-700'
+          }`}>
+            {uploadResult.analyse?.scores?.global 
+              ? `${(uploadResult.analyse.scores.global * 100).toFixed(0)}%` 
+              : 'N/A'}
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-600">Statut</span>
+          <span className="text-sm font-medium text-gray-900">
+            {uploadResult.document?.statut}
+          </span>
+        </div>
+      </div>
+
+      {/* Boutons */}
+      <div className="flex gap-3">
+        <button
+          onClick={() => {
+            setUploadResult(null);
+            setUploadPhase('idle');
+            setSelectedFile(null);
+            setUploadProgress(0);
+          }}
+          className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors text-sm font-medium"
+        >
+          Uploader un autre
+        </button>
+        <button
+          onClick={() => navigate(`/comptable/documents/${uploadResult.document?.id}`)}
+          className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors text-sm font-semibold"
+        >
+          Voir le document
+        </button>
+      </div>
+
+    </div>
+  </div>
+)}
     </AdminLayout>
   );
 };

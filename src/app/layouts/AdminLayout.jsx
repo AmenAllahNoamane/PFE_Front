@@ -98,12 +98,6 @@ const AdminLayout = ({ children }) => {
           section: 'Gestion'
         },
         {
-          path: '/manager/audit',
-          label: 'Logs d\'audit',
-          icon: ClipboardList,
-          section: 'Gestion'
-        },
-        {
           path: '/comptable/documents',
           label: 'Mes documents',
           icon: FileText,

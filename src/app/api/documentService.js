@@ -30,7 +30,7 @@ class DocumentService {
 
   async getMyDocuments() {
     try {
-      const response = await api.get("/documents/MyDocumentsWithAnalyse");
+      const response = await api.get("/documents/MyDocuments");
       return response.data;
     } catch (error) {
       const message =
@@ -133,5 +133,39 @@ async getDashboardStats() {
 
 
 }
+async downloadDocument(id, originalName) {
+  try {
+    const response = await api.get(`/documents/download/${id}`, {
+      responseType: 'blob',
+    });
+
+    const blob = new Blob([response.data], {
+      type: response.headers['content-type'],
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = window.document.createElement('a');
+    link.href = url;
+    link.download = originalName;
+    window.document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+
+  } catch (error) {
+    throw error.response?.data?.error || 'Erreur lors du téléchargement';
+  }
+}
+
+async sendToBC(id) {
+  try {
+    const response = await api.post(`/documents/send-to-bc/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.error || 'Erreur lors de l\'envoi vers Business Central';
+  }
+}
+
+
 }
 export default new DocumentService();
